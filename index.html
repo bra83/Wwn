@@ -17,9 +17,9 @@ button{font:inherit}.app{max-width:415px;min-height:100dvh;margin:auto;backgroun
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{background:#102124;color:var(--cream);border:1px solid #2eb5c566;padding:11px;border-radius:8px;text-align:left}.action:active{transform:scale(.98)}
 .map{position:relative;height:calc(100dvh - 285px);min-height:480px;margin:0 -14px;overflow:hidden;background:#03090a;border-top:1px solid #b58b4d44;border-bottom:1px solid #b58b4d44;touch-action:pan-x pan-y}
 .hex{position:absolute;width:92px;height:106px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:transparent;transition:.2s;cursor:pointer;isolation:isolate}
-.hex .terrain{position:absolute;inset:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background-size:198% auto;background-position:center center;background-repeat:no-repeat;filter:saturate(.82) brightness(.98);transition:.2s}
+.hex .terrain{position:absolute;inset:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background-size:230% auto;transform:scale(1.018);transform-origin:center;background-position:center center;background-repeat:no-repeat;filter:saturate(.82) brightness(.98);transition:.2s}
 .hex .shade{position:absolute;inset:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#020607d9;transition:.2s;z-index:1}.hex.seen .shade{background:#0004}
-.hex.current{filter:drop-shadow(0 0 4px rgba(222,201,159,.15)) drop-shadow(0 0 10px rgba(213,170,91,.35)) drop-shadow(0 0 18px rgba(213,170,91,.25))}
+.hex.current{filter:drop-shadow(0 0 5px rgba(239,205,132,.28)) drop-shadow(0 0 13px rgba(213,170,91,.50)) drop-shadow(0 0 24px rgba(213,170,91,.32))}
 .hex.current .terrain{filter:saturate(1.08) brightness(1.08)}
 .hex.current::after{content:"";position:absolute;inset:-4px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:transparent;box-shadow:0 0 14px rgba(229,190,107,.55),0 0 28px rgba(229,190,107,.22);pointer-events:none;z-index:0}
 .hex span{position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;color:#ead7ad;text-shadow:0 0 6px rgba(229,190,107,.35),0 2px 4px #000}
@@ -34,8 +34,9 @@ input{width:100%;background:#071012;border:1px solid #b58b4d55;color:var(--cream
 .dashboard .card{margin:0}
 #jogar .hero{border-left:3px solid var(--bronze)}
 #jogar .stats{margin-top:6px}
-#explorar{padding-top:10px;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+#explorar{padding-top:10px;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 #explorar>.card:first-child{margin-bottom:8px}
+#explorar>.card:last-child{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:18;margin-bottom:12px;box-shadow:0 -8px 18px #03090acc}
 @media(max-height:760px){.map{min-height:430px}.top{padding-top:12px}.view{padding-top:10px}}
 </style></head>
 <body><main class="app">
