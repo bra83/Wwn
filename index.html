@@ -16,7 +16,7 @@ button{font:inherit}.app{max-width:415px;min-height:100dvh;margin:auto;backgroun
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stat{padding:10px;background:#071012;border-radius:8px;text-align:center}.stat b{display:block;font-size:22px}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{background:#102124;color:var(--cream);border:1px solid #2eb5c566;padding:11px;border-radius:8px;text-align:left}.action:active{transform:scale(.98)}
 .map{position:relative;height:calc(100dvh - 245px);min-height:540px;margin:0 -14px;overflow:hidden;background:#03090a;border-top:1px solid #b58b4d44;border-bottom:1px solid #b58b4d44;touch-action:pan-x pan-y}
-.hex{position:absolute;width:92px;height:106px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background-size:cover;background-position:center;filter:saturate(.8);transition:.2s;cursor:pointer}
+.hex{position:absolute;width:92px;height:106px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background-size:214% auto;background-position:center center;background-repeat:no-repeat;filter:saturate(.8);transition:.2s;cursor:pointer}
 .hex::after{content:"";position:absolute;inset:0;background:#020607d9;transition:.2s}.hex.seen::after{background:#0004}.hex.current{outline:3px solid var(--teal);outline-offset:-5px;filter:saturate(1.15) brightness(1.1)}
 .hex span{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;text-shadow:0 2px 4px #000}
 .mapinfo{position:absolute;z-index:5;left:12px;right:12px;bottom:12px;background:#071012dd;backdrop-filter:blur(8px);border:1px solid #b58b4d55;border-radius:8px;padding:9px 11px;pointer-events:none}
