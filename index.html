@@ -76,14 +76,16 @@ input{width:100%;background:#071012;border:1px solid #b58b4d55;color:var(--cream
 </nav></main>
 <script>
 const terrain = ["assets/terrain_base_01_lush_grassland.png", "assets/terrain_base_02_dry_grassland.png", "assets/terrain_base_03_cultivated_farmland.png", "assets/terrain_base_04_wild_meadow.png", "assets/terrain_base_05_scrubland.png", "assets/terrain_base_06_deciduous_forest.png", "assets/terrain_base_07_dense_pine_forest.png", "assets/terrain_base_08_humid_jungle.png"];
+const HEX_W=92, HEX_H=106, HEX_STEP_Y=HEX_H*.75, HEX_ORIGIN_X=161, HEX_ORIGIN_Y=246;
 const hexes=[
-{x:161,y:34,q:0,r:-2},{x:69,y:87,q:-1,r:-1},{x:161,y:140,q:0,r:-1},{x:253,y:87,q:1,r:-2},
-{x:69,y:193,q:-1,r:0},{x:161,y:246,q:0,r:0,current:true,seen:true},{x:253,y:193,q:1,r:-1},
-{x:69,y:299,q:-1,r:1},{x:161,y:352,q:0,r:1},{x:253,y:299,q:1,r:0}];
+{q:0,r:-2},{q:-1,r:-1},{q:0,r:-1},{q:1,r:-2},
+{q:-1,r:0},{q:0,r:0,current:true,seen:true},{q:1,r:-1},
+{q:-1,r:1},{q:0,r:1},{q:1,r:0}];
 let current=5; const saved=JSON.parse(localStorage.getItem('wwn_slice')||'null');
 if(saved && saved.current!=null){current=saved.current; (saved.seen||[]).forEach(i=>hexes[i].seen=true)}
 function dist(a,b){const dq=a.q-b.q,dr=a.r-b.r;return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2}
-function renderMap(){const m=document.getElementById('map');m.querySelectorAll('.hex').forEach(e=>e.remove());hexes.forEach((h,i)=>{h.current=i===current;if(h.current)h.seen=true;let e=document.createElement('div');e.className='hex '+(h.seen?'seen ':'')+(h.current?'current':'');e.style.left=h.x+'px';e.style.top=h.y+'px';e.style.backgroundImage=`url("${terrain[i%terrain.length]}")`;e.innerHTML='<span>'+(h.seen?(h.current?'⌖':''):'?')+'</span>';e.onclick=()=>travel(i);m.appendChild(e)});save()}
+function hexPosition(h){return {x:HEX_ORIGIN_X+HEX_W*(h.q+h.r/2),y:HEX_ORIGIN_Y+HEX_STEP_Y*h.r}}
+function renderMap(){const m=document.getElementById('map');m.querySelectorAll('.hex').forEach(e=>e.remove());hexes.forEach((h,i)=>{h.current=i===current;if(h.current)h.seen=true;let p=hexPosition(h),e=document.createElement('div');e.className='hex '+(h.seen?'seen ':'')+(h.current?'current':'');e.style.left=p.x+'px';e.style.top=p.y+'px';e.style.backgroundImage=`url("${terrain[i%terrain.length]}")`;e.innerHTML='<span>'+(h.seen?(h.current?'⌖':''):'?')+'</span>';e.onclick=()=>travel(i);m.appendChild(e)});save()}
 function travel(i){if(!hexes[i].seen && dist(hexes[current],hexes[i])!==1){setInfo('Distante demais','Escolha um hex adjacente.');return}if(dist(hexes[current],hexes[i])!==1){setInfo('Movimento inválido','A jornada deste slice aceita apenas hex adjacente.');return}current=i;hexes[i].seen=true;setInfo('Novo hex revelado','Fog enter-only: apenas o destino foi revelado.');renderMap()}
 function explore(){hexes.forEach((h,i)=>{if(dist(hexes[current],h)===1 && Math.random()>.55)h.seen=true});setInfo('Exploração concluída','Alguns indícios próximos foram marcados; viajar continua revelando apenas o destino.');renderMap()}
 function camp(){setInfo('Acampamento','Protótipo registrou a noite. Consumo real será resolvido pelo motor WWN.')}
