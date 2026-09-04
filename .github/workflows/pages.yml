@@ -24,22 +24,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate exact WWN runtime assets
+      - name: Validate WWN app and runtime assets
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/asset-sha256.txt <<'EOF'
-          0f4dd6d2b08a2174ad3d1c3ad1d32564d2d73a23373ba6ff8b4ca0b00ae232d6  assets/terrain_base_01_lush_grassland.png
-          fbf0dd09d30823edbe077504e97226e3b379112b7e980198a511a56b2b69c007  assets/terrain_base_02_dry_grassland.png
-          2550045ca348d63070497a3210f3ee3677abb411eea549a6793aae4d601db0b8  assets/terrain_base_03_cultivated_farmland.png
-          341f63c382f087784598af05e0e3908bae9843f6bc233b7aff37d0dc8e347305  assets/terrain_base_04_wild_meadow.png
-          9d4444c0803da091885fa5df87934fe2863e3b2c956ea0c5f26db31287fef411  assets/terrain_base_05_scrubland.png
-          e53563b57009c6882e294dfa523a36fc6831554526ccc49a95e198814fdf8a6e  assets/terrain_base_06_deciduous_forest.png
-          23fa3c9b5e0fd8277063bafcdb609dea48b851087742adf90ee5b2766e04e288  assets/terrain_base_07_dense_pine_forest.png
-          c34f8258ebbda766aac79822c94166d697d741f0ba23503d7f3f4e7061673815  assets/terrain_base_08_humid_jungle.png
-          EOF
-          sha256sum -c /tmp/asset-sha256.txt
-          test -f index.html
+          test -s index.html
+          test -s world.css
+          test -s world.js
+          node --check world.js
+          grep -q 'world.css?v=3' index.html
+          grep -q 'world.js?v=3' index.html
+          grep -q 'function enterPOI' world.js
+          grep -q 'function exportWorld' world.js
+          test -s assets/terrain_base_01_lush_grassland.png
+          test -s assets/terrain_base_10_dark_swamp.png
+          test -s assets/terrain_base_14_snowfield.png
+          test -s assets/terrain_features_04_high_mountains.png
+          test -s assets/terrain_features_10_inland_sea.png
+          test -s assets/terrain_features_14_island.png
+          test -s assets/poi_inhabited_02_farming_village.png
+          test -s assets/poi_dangerous_01_overgrown_ruins.png
+          test -s assets/weather_time_07_fog.png
+          test -s assets/weather_time_16_night_moon.png
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -65,8 +71,18 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
-          curl -fsSL "${site}assets/terrain_base_01_lush_grassland.png" -o /tmp/live-01.png
-          curl -fsSL "${site}assets/terrain_base_08_humid_jungle.png" -o /tmp/live-08.png
-          echo '0f4dd6d2b08a2174ad3d1c3ad1d32564d2d73a23373ba6ff8b4ca0b00ae232d6  /tmp/live-01.png' | sha256sum -c -
-          echo 'c34f8258ebbda766aac79822c94166d697d741f0ba23503d7f3f4e7061673815  /tmp/live-08.png' | sha256sum -c -
+          curl -fsSL "${site}world.js?v=3" -o /tmp/live-world.js
+          curl -fsSL "${site}world.css?v=3" -o /tmp/live-world.css
+          node --check /tmp/live-world.js
+          grep -q 'function enterPOI' /tmp/live-world.js
+          grep -q '.poi-known' /tmp/live-world.css
+          for asset in \
+            assets/terrain_base_10_dark_swamp.png \
+            assets/terrain_features_04_high_mountains.png \
+            assets/terrain_features_10_inland_sea.png \
+            assets/poi_dangerous_01_overgrown_ruins.png \
+            assets/weather_time_07_fog.png; do
+            curl -fsSL "${site}${asset}" -o /tmp/check.bin
+            test -s /tmp/check.bin
+          done
           echo "PUBLIC_URL=$site"
