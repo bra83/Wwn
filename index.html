@@ -1,139 +1,60 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Braseiro WWN — Vertical Slice 0.1</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Braseiro WWN — Atlas World Engine</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&display=swap');
-:root{--bg:#071012;--panel:#0B1517;--cream:#DEC99F;--bronze:#B58B4D;--teal:#2EB5C5;--amber:#D58B2B;--danger:#CA5B39;--violet:#86539C}
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--cream);font-family:"Barlow Condensed",sans-serif}
-button{font:inherit}.app{max-width:415px;min-height:100dvh;margin:auto;background:linear-gradient(180deg,#071012,#091517);position:relative;padding-bottom:calc(150px + env(safe-area-inset-bottom))}
-.top{padding:18px 18px 12px;border-bottom:1px solid #b58b4d55;display:flex;justify-content:space-between;align-items:end}
-.title{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:23px}.label{font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:12px;color:#b58b4d}
-.status{font-size:12px;color:var(--teal)} .view{display:none;padding:14px}.view.active{display:block}
-.card{background:var(--panel);border:1px solid #b58b4d44;border-radius:10px;padding:14px;margin-bottom:10px}
-.hero{display:flex;justify-content:space-between;gap:10px}.big{font-size:34px;font-weight:700}.muted{opacity:.7}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stat{padding:10px;background:#071012;border-radius:8px;text-align:center}.stat b{display:block;font-size:22px}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{background:#102124;color:var(--cream);border:1px solid #2eb5c566;padding:11px;border-radius:8px;text-align:left}.action:active{transform:scale(.98)}
-.map{position:relative;height:calc(100dvh - 285px);min-height:480px;margin:0 -14px;overflow:hidden;background:#03090a;border-top:1px solid #b58b4d44;border-bottom:1px solid #b58b4d44;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
-.map.dragging{cursor:grabbing}
-.map-layer{position:absolute;inset:0;transform:translate3d(0,0,0);will-change:transform}
-.hex{position:absolute;width:92px;height:106px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:transparent;transition:.2s;cursor:pointer;isolation:isolate}
-.hex .terrain{position:absolute;inset:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background-size:230% auto;transform:scale(1.018);transform-origin:center;background-position:center center;background-repeat:no-repeat;filter:saturate(.82) brightness(.98);transition:.2s}
-.hex .shade{position:absolute;inset:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:#020607d9;transition:.2s;z-index:1}.hex.seen .shade{background:#0004}
-.hex.current{filter:drop-shadow(0 0 5px rgba(239,205,132,.28)) drop-shadow(0 0 13px rgba(213,170,91,.50)) drop-shadow(0 0 24px rgba(213,170,91,.32))}
-.hex.current .terrain{filter:saturate(1.08) brightness(1.08)}
-.hex.current::after{content:"";position:absolute;inset:-4px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:transparent;box-shadow:0 0 14px rgba(229,190,107,.55),0 0 28px rgba(229,190,107,.22);pointer-events:none;z-index:0}
-.hex span{position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;color:#ead7ad;text-shadow:0 0 6px rgba(229,190,107,.35),0 2px 4px #000}
-.mapinfo{position:absolute;z-index:5;left:12px;right:12px;bottom:12px;background:#071012dd;backdrop-filter:blur(8px);border:1px solid #b58b4d55;border-radius:8px;padding:9px 11px;pointer-events:none}
-.log{height:155px;overflow:auto;font-size:13px;line-height:1.35}.log div{padding:4px 0;border-bottom:1px solid #ffffff0b}
-.bar{height:8px;background:#071012;border-radius:9px;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:var(--teal)}
-.nav{position:fixed;max-width:415px;left:50%;transform:translateX(-50%);right:0;bottom:0;height:calc(68px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#081214f5;border-top:1px solid #b58b4d55;display:grid;grid-template-columns:repeat(4,1fr);z-index:20}
-.nav button{background:none;border:0;color:#dec99f99}.nav button.active{color:var(--teal);border-top:2px solid var(--teal)}
-.pill{display:inline-block;padding:3px 7px;border-radius:20px;background:#b58b4d22;border:1px solid #b58b4d55;font-size:11px;margin-right:4px}
-input{width:100%;background:#071012;border:1px solid #b58b4d55;color:var(--cream);padding:10px;border-radius:8px;font:inherit}
-.dashboard{display:grid;grid-template-columns:1.35fr .65fr;gap:10px}
-.dashboard .card{margin:0}
-#jogar .hero{border-left:3px solid var(--bronze)}
-#jogar .stats{margin-top:6px}
-#explorar{padding-top:10px;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
-#explorar>.card:first-child{margin-bottom:8px}
-#explorar>.card:last-child{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:18;margin-bottom:12px;box-shadow:0 -8px 18px #03090acc}
-@media(max-height:760px){.map{min-height:430px}.top{padding-top:12px}.view{padding-top:10px}}
+:root{--bg:#071012;--panel:#0b1517;--cream:#dec99f;--bronze:#b58b4d;--teal:#2eb5c5;--ink:#03090a}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--cream);font-family:"Barlow Condensed",sans-serif}button,input{font:inherit}
+.app{max-width:415px;min-height:100dvh;margin:auto;background:linear-gradient(180deg,#071012,#091517);position:relative;padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+.top{padding:18px 18px 12px;border-bottom:1px solid #b58b4d55;display:flex;justify-content:space-between;align-items:end}.title{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:23px}.label{font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:12px;color:var(--bronze)}.status{font-size:12px;color:var(--teal)}
+.view{display:none;padding:14px}.view.active{display:block}.card{background:var(--panel);border:1px solid #b58b4d44;border-radius:10px;padding:14px;margin-bottom:10px}.hero{display:flex;justify-content:space-between;gap:10px}.big{font-size:34px;font-weight:700}.muted{opacity:.76}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stat{padding:10px;background:#071012;border-radius:8px;text-align:center}.stat b{display:block;font-size:22px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{background:#102124;color:var(--cream);border:1px solid #2eb5c566;padding:11px;border-radius:8px;text-align:left}.action:active{transform:scale(.98)}
+.atlasbar{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.worldmeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.pill{font-size:11px;padding:3px 7px;border-radius:20px;border:1px solid #b58b4d55;background:#b58b4d14}.maptools{display:grid;grid-template-columns:repeat(3,36px);gap:5px}.maptools button{height:36px;border-radius:8px;border:1px solid #b58b4d55;background:#071012;color:var(--cream)}
+.map{position:relative;height:calc(100dvh - 322px);min-height:470px;margin:0 -14px;overflow:hidden;background:#03090a;border-top:1px solid #b58b4d44;border-bottom:1px solid #b58b4d44;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}.map.dragging{cursor:grabbing}.map-canvas{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}.hex{position:absolute;width:92px;height:106px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);isolation:isolate;cursor:pointer}.hex .terrain{position:absolute;inset:0;clip-path:inherit;background-size:230% auto;transform:scale(1.02);background-position:center;background-repeat:no-repeat;filter:saturate(.84) brightness(.98)}.hex .shade{position:absolute;inset:0;clip-path:inherit;background:#020607e5;z-index:1;transition:.18s}.hex.seen .shade{background:#0003}.hex.visited .shade{background:#0001}.hex.current{filter:drop-shadow(0 0 6px rgba(239,205,132,.35)) drop-shadow(0 0 15px rgba(213,170,91,.55)) drop-shadow(0 0 26px rgba(213,170,91,.30))}.hex.current .terrain{filter:saturate(1.1) brightness(1.08)}.hex.current::after{content:"";position:absolute;inset:-5px;clip-path:inherit;box-shadow:0 0 16px rgba(229,190,107,.56),0 0 30px rgba(229,190,107,.22);pointer-events:none;z-index:0}.hex .mark{position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;font-size:18px;color:#ead7ad;text-shadow:0 0 7px #d5aa5b77,0 2px 4px #000}.hex .poi{position:absolute;z-index:4;right:12px;top:19px;font-size:14px;text-shadow:0 2px 4px #000}.hex .coord{display:none}
+.mapinfo{position:absolute;z-index:8;left:12px;right:12px;bottom:12px;background:#071012e8;backdrop-filter:blur(8px);border:1px solid #b58b4d55;border-radius:8px;padding:9px 11px;pointer-events:none}.mapinfo .row{display:flex;justify-content:space-between;gap:10px}.mapinfo small{opacity:.7}.log{height:155px;overflow:auto;font-size:13px;line-height:1.35}.log div{padding:4px 0;border-bottom:1px solid #ffffff0b}
+.nav{position:fixed;max-width:415px;left:50%;transform:translateX(-50%);right:0;bottom:0;height:calc(68px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#081214f5;border-top:1px solid #b58b4d55;display:grid;grid-template-columns:repeat(4,1fr);z-index:20}.nav button{background:none;border:0;color:#dec99f99}.nav button.active{color:var(--teal);border-top:2px solid var(--teal)}input{width:100%;background:#071012;border:1px solid #b58b4d55;color:var(--cream);padding:10px;border-radius:8px}
+#jogar .hero{border-left:3px solid var(--bronze)}#explorar{padding-top:10px;padding-bottom:calc(98px + env(safe-area-inset-bottom))}#explorar>.card:last-child{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:18;margin-bottom:12px;box-shadow:0 -8px 18px #03090acc}@media(max-height:760px){.map{min-height:420px}.top{padding-top:12px}.view{padding-top:10px}}
 </style></head>
 <body><main class="app">
 <header class="top"><div><div class="label">Braseiro • Worlds Without Number</div><div class="title">WORLD WITHOUT NUMBER</div></div><div class="status">WWN</div></header>
-<section id="jogar" class="view active">
-<div class="card hero"><div><div class="label">Personagem ativo</div><div class="title">PERSONAGEM</div><div class="muted">Nível 1</div></div><div><div class="label">HP</div><div class="big">8/8</div></div></div>
-<div class="card"><div class="label">Recursos</div><div class="stats"><div class="stat"><span>Strain</span><b>0</b><small>/ 12</small></div><div class="stat"><span>Effort</span><b>2</b><small>/ 2</small></div><div class="stat"><span>AC</span><b>14</b></div></div></div>
-<div class="card"><div class="label">Ações rápidas</div><div class="actions">
-<button class="action" onclick="note('Teste de perícia preparado.')">🎲 Teste de perícia</button>
-<button class="action" onclick="note('Ataque preparado. O dano deve vir do Rules Engine.')">⚔ Ataque</button>
-<button class="action" onclick="note('Inventário aberto em modo contextual.')">▣ Inventário</button>
-<button class="action" onclick="showView('explorar')">⌖ Continuar viagem</button>
-</div></div>
-<div class="card"><div class="label">Diário de sessão</div><div id="playerLog" class="log"><div>Sessão pronta.</div><div>Abra o Atlas para continuar a exploração.</div></div></div>
-</section>
-<section id="explorar" class="view">
-<div class="card"><div class="label">Atlas • Jornada</div><div class="title">ATLAS</div></div>
-<div class="map" id="map"><div class="map-layer" id="mapLayer"></div><div class="mapinfo"><div class="label">LOCAL</div><b id="hexName">Hex atual</b><div class="muted" id="hexText">Toque em um hex adjacente para viajar.</div></div></div>
-<div class="card"><div class="actions"><button class="action" onclick="explore()">◎ Explorar hex</button><button class="action" onclick="camp()">☾ Acampar</button></div></div>
-</section>
-<section id="confronto" class="view">
-<div class="card"><div class="label">Confronto</div><div class="title">Estado de combate</div><div class="stats"><div class="stat"><span>Rodada</span><b id="round">1</b></div><div class="stat"><span>Main</span><b id="mainA">●</b></div><div class="stat"><span>Move</span><b id="moveA">●</b></div></div></div>
-<div class="card"><div class="label">Ações</div><div class="actions"><button class="action" onclick="useAction('mainA','Main Action usada')">Main Action</button><button class="action" onclick="useAction('moveA','Move Action usada')">Move Action</button><button class="action" onclick="note('Total Defense selecionada.')">Total Defense</button><button class="action" onclick="nextRound()">Próxima rodada</button></div></div>
-</section>
-<section id="mestre" class="view">
-<div class="card"><div class="label">Mestre</div><div class="title">Mestre da campanha</div><p class="muted">Consulte o estado da campanha, localização e memória da sessão.</p></div>
-<div class="card"><div class="label">Pergunta ao Mestre</div><input id="gmInput" placeholder="O que há além das ruínas?"><div style="height:8px"></div><button class="action" style="width:100%" onclick="gm()">Enviar contexto</button></div>
-<div class="card"><div class="label">Memória local do protótipo</div><div id="gmLog" class="log"><div>Local atual: Local atual.</div></div></div>
-</section>
-<nav class="nav">
-<button class="active" data-v="jogar" onclick="showView('jogar')">JOGAR</button>
-<button data-v="explorar" onclick="showView('explorar')">EXPLORAR</button>
-<button data-v="confronto" onclick="showView('confronto')">CONFRONTO</button>
-<button data-v="mestre" onclick="showView('mestre')">MESTRE</button>
-</nav></main>
+<section id="jogar" class="view active"><div class="card hero"><div><div class="label">Personagem ativo</div><div class="title">PERSONAGEM</div><div class="muted">Nível 1</div></div><div><div class="label">HP</div><div class="big">8/8</div></div></div><div class="card"><div class="label">Recursos</div><div class="stats"><div class="stat"><span>Strain</span><b>0</b><small>/ 12</small></div><div class="stat"><span>Effort</span><b>2</b><small>/ 2</small></div><div class="stat"><span>AC</span><b>14</b></div></div></div><div class="card"><div class="label">Ações rápidas</div><div class="actions"><button class="action" onclick="note('Teste de perícia preparado.')">🎲 Teste de perícia</button><button class="action" onclick="note('Ataque preparado. O dano deve vir do Rules Engine.')">⚔ Ataque</button><button class="action" onclick="note('Inventário aberto em modo contextual.')">▣ Inventário</button><button class="action" onclick="showView('explorar')">⌖ Continuar viagem</button></div></div><div class="card"><div class="label">Diário de sessão</div><div id="playerLog" class="log"><div>Sessão pronta.</div><div>Abra o Atlas para continuar a exploração.</div></div></div></section>
+<section id="explorar" class="view"><div class="card"><div class="atlasbar"><div><div class="label">Atlas • Jornada</div><div class="title">ATLAS</div></div><div class="maptools"><button onclick="zoomBy(-.12)" aria-label="reduzir mapa">−</button><button onclick="recenterMap()" aria-label="centralizar">⌖</button><button onclick="zoomBy(.12)" aria-label="ampliar mapa">+</button></div></div><div class="worldmeta"><span class="pill" id="clockPill">Dia 1 • 08:00</span><span class="pill" id="regionPill">Região central</span><span class="pill" id="auditPill">Coerência ✓</span></div></div><div class="map" id="map"><div class="map-canvas" id="mapCanvas"></div><div class="mapinfo"><div class="row"><div><div class="label">LOCAL</div><b id="hexName">Hex atual</b></div><div style="text-align:right"><div class="label">VIAGEM</div><b id="travelText">—</b></div></div><div class="muted" id="hexText">Arraste com o dedo. Toque em um hex adjacente para viajar.</div></div></div><div class="card"><div class="actions"><button class="action" onclick="explore()">◎ Explorar hex</button><button class="action" onclick="camp()">☾ Acampar</button></div></div></section>
+<section id="confronto" class="view"><div class="card"><div class="label">Confronto</div><div class="title">Estado de combate</div><div class="stats"><div class="stat"><span>Rodada</span><b id="round">1</b></div><div class="stat"><span>Main</span><b id="mainA">●</b></div><div class="stat"><span>Move</span><b id="moveA">●</b></div></div></div><div class="card"><div class="label">Ações</div><div class="actions"><button class="action" onclick="useAction('mainA','Main Action usada')">Main Action</button><button class="action" onclick="useAction('moveA','Move Action usada')">Move Action</button><button class="action" onclick="note('Total Defense selecionada.')">Total Defense</button><button class="action" onclick="nextRound()">Próxima rodada</button></div></div></section>
+<section id="mestre" class="view"><div class="card"><div class="label">Mestre</div><div class="title">Mestre da campanha</div><p class="muted">O Atlas mantém estado local, macro-regiões, descobertas e tempo de jornada.</p></div><div class="card"><div class="label">Pergunta ao Mestre</div><input id="gmInput" placeholder="O que há além das ruínas?"><div style="height:8px"></div><button class="action" style="width:100%" onclick="gm()">Enviar contexto</button></div><div class="card"><div class="label">Memória local do protótipo</div><div id="gmLog" class="log"><div>Mundo gerado e validado.</div></div></div></section>
+<nav class="nav"><button class="active" data-v="jogar" onclick="showView('jogar')">JOGAR</button><button data-v="explorar" onclick="showView('explorar')">EXPLORAR</button><button data-v="confronto" onclick="showView('confronto')">CONFRONTO</button><button data-v="mestre" onclick="showView('mestre')">MESTRE</button></nav></main>
 <script>
-const terrain = ["assets/terrain_base_01_lush_grassland.png", "assets/terrain_base_02_dry_grassland.png", "assets/terrain_base_03_cultivated_farmland.png", "assets/terrain_base_04_wild_meadow.png", "assets/terrain_base_05_scrubland.png", "assets/terrain_base_06_deciduous_forest.png", "assets/terrain_base_07_dense_pine_forest.png", "assets/terrain_base_08_humid_jungle.png"];
-const HEX_W=92, HEX_H=106, HEX_STEP_X=HEX_W, HEX_STEP_Y=HEX_H*.75, HEX_ORIGIN_X=161, HEX_ORIGIN_Y=246;
-const baseHexes=[
-{q:0,r:-2},{q:-1,r:-1},{q:0,r:-1},{q:1,r:-2},
-{q:-1,r:0},{q:0,r:0,current:true,seen:true},{q:1,r:-1},
-{q:-1,r:1},{q:0,r:1},{q:1,r:0}];
-const hexes=baseHexes.map(h=>({...h}));
-const occupied=new Set(hexes.map(h=>`${h.q},${h.r}`));
-const MAP_RADIUS=4;
-for(let q=-MAP_RADIUS;q<=MAP_RADIUS;q++){
-  for(let r=-MAP_RADIUS;r<=MAP_RADIUS;r++){
-    if((Math.abs(q)+Math.abs(r)+Math.abs(q+r))/2>MAP_RADIUS)continue;
-    const key=`${q},${r}`;
-    if(!occupied.has(key)){hexes.push({q,r});occupied.add(key)}
-  }
-}
-let current=5; const saved=JSON.parse(localStorage.getItem('wwn_slice')||'null');
-let panX=0,panY=0;
-if(saved){
-  if(saved.current!=null && saved.current<hexes.length)current=saved.current;
-  (saved.seen||[]).forEach(i=>{if(hexes[i])hexes[i].seen=true});
-  if(Number.isFinite(saved.panX))panX=saved.panX;
-  if(Number.isFinite(saved.panY))panY=saved.panY;
-}
-function dist(a,b){const dq=a.q-b.q,dr=a.r-b.r;return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2}
-function hexPosition(h){return {x:HEX_ORIGIN_X+HEX_STEP_X*(h.q+h.r/2),y:HEX_ORIGIN_Y+HEX_STEP_Y*h.r}}
-function applyPan(){document.getElementById('mapLayer').style.transform=`translate3d(${panX}px,${panY}px,0)`}
-function renderMap(){const layer=document.getElementById('mapLayer');layer.replaceChildren();hexes.forEach((h,i)=>{h.current=i===current;if(h.current)h.seen=true;let p=hexPosition(h),e=document.createElement('div');e.className='hex '+(h.seen?'seen ':'')+(h.current?'current':'');e.dataset.index=i;e.style.left=p.x+'px';e.style.top=p.y+'px';e.innerHTML='<div class="terrain"></div><div class="shade"></div><span>'+(h.seen?(h.current?'⌖':''):'?')+'</span>';e.querySelector('.terrain').style.backgroundImage=`url("${terrain[i%terrain.length]}")`;layer.appendChild(e)});applyPan();save()}
-function travel(i){if(!hexes[i].seen && dist(hexes[current],hexes[i])!==1){setInfo('Distante demais','Escolha um hex adjacente.');return}if(dist(hexes[current],hexes[i])!==1){setInfo('Movimento inválido','A jornada deste slice aceita apenas hex adjacente.');return}current=i;hexes[i].seen=true;setInfo('Novo hex revelado','Fog enter-only: apenas o destino foi revelado.');renderMap()}
-function explore(){hexes.forEach((h,i)=>{if(dist(hexes[current],h)===1 && Math.random()>.55)h.seen=true});setInfo('Exploração concluída','Alguns indícios próximos foram marcados; viajar continua revelando apenas o destino.');renderMap()}
-function camp(){setInfo('Acampamento','Protótipo registrou a noite. Consumo real será resolvido pelo motor WWN.')}
-function setInfo(a,b){document.getElementById('hexName').textContent=a;document.getElementById('hexText').textContent=b}
-function save(){localStorage.setItem('wwn_slice',JSON.stringify({current,seen:hexes.map((h,i)=>h.seen?i:null).filter(x=>x!==null),panX,panY}))}
-function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));if(v==='explorar')renderMap()}
-function note(t){document.getElementById('playerLog').insertAdjacentHTML('afterbegin','<div>'+t+'</div>')}
-function useAction(id,msg){document.getElementById(id).textContent='○';note(msg)}
-function nextRound(){document.getElementById('round').textContent=+document.getElementById('round').textContent+1;document.getElementById('mainA').textContent='●';document.getElementById('moveA').textContent='●'}
-function gm(){let x=document.getElementById('gmInput');if(!x.value)return;document.getElementById('gmLog').insertAdjacentHTML('afterbegin','<div>Contexto solicitado: '+x.value.replace(/[<>]/g,'')+'</div>');x.value=''}
-
-const mapEl=document.getElementById('map');
-let activePointer=null,startX=0,startY=0,startPanX=0,startPanY=0,dragMoved=false,tapHex=null;
-mapEl.addEventListener('pointerdown',e=>{
-  if(e.pointerType==='mouse'&&e.button!==0)return;
-  activePointer=e.pointerId;startX=e.clientX;startY=e.clientY;startPanX=panX;startPanY=panY;dragMoved=false;tapHex=e.target.closest('.hex');
-  mapEl.setPointerCapture(e.pointerId);mapEl.classList.add('dragging');
-});
-mapEl.addEventListener('pointermove',e=>{
-  if(e.pointerId!==activePointer)return;
-  const dx=e.clientX-startX,dy=e.clientY-startY;
-  if(!dragMoved&&Math.hypot(dx,dy)>6)dragMoved=true;
-  if(dragMoved){panX=startPanX+dx;panY=startPanY+dy;applyPan()}
-});
-function finishMapPointer(e){
-  if(e.pointerId!==activePointer)return;
-  if(!dragMoved&&tapHex){const i=Number(tapHex.dataset.index);if(Number.isInteger(i))travel(i)}
-  activePointer=null;tapHex=null;mapEl.classList.remove('dragging');save();
-}
-mapEl.addEventListener('pointerup',finishMapPointer);
-mapEl.addEventListener('pointercancel',e=>{if(e.pointerId===activePointer){activePointer=null;tapHex=null;mapEl.classList.remove('dragging')}});
-
-renderMap();
+const BIOMES={
+ lush:{name:'Campos verdes',asset:'assets/terrain_base_01_lush_grassland.png',cost:4,climate:'úmido',region:'campina',adj:{lush:6,meadow:6,farmland:5,deciduous:5,jungle:2,dry:1,pine:1,scrub:0}},
+ dry:{name:'Campos secos',asset:'assets/terrain_base_02_dry_grassland.png',cost:4,climate:'seco',region:'estepe',adj:{dry:6,scrub:6,meadow:5,farmland:3,lush:1,deciduous:1,pine:-3,jungle:-6}},
+ farmland:{name:'Terras cultivadas',asset:'assets/terrain_base_03_cultivated_farmland.png',cost:3,climate:'temperado',region:'assentada',adj:{farmland:6,meadow:6,lush:5,dry:3,deciduous:3,scrub:1,pine:-2,jungle:-6}},
+ meadow:{name:'Prado aberto',asset:'assets/terrain_base_04_wild_meadow.png',cost:3,climate:'transição',region:'campina',adj:{meadow:6,lush:6,dry:5,farmland:5,deciduous:4,scrub:4,pine:2,jungle:1}},
+ scrub:{name:'Mato seco',asset:'assets/terrain_base_05_scrubland.png',cost:5,climate:'seco',region:'ermo',adj:{scrub:6,dry:6,meadow:4,farmland:1,deciduous:1,lush:0,pine:-3,jungle:-6}},
+ deciduous:{name:'Bosque',asset:'assets/terrain_base_06_deciduous_forest.png',cost:5,climate:'temperado',region:'floresta',adj:{deciduous:6,lush:5,meadow:4,pine:5,jungle:4,farmland:3,scrub:1,dry:1}},
+ pine:{name:'Floresta de pinheiros',asset:'assets/terrain_base_07_dense_pine_forest.png',cost:6,climate:'frio',region:'floresta fria',adj:{pine:6,deciduous:5,lush:2,meadow:2,jungle:0,farmland:-2,dry:-3,scrub:-3}},
+ jungle:{name:'Selva úmida',asset:'assets/terrain_base_08_humid_jungle.png',cost:7,climate:'muito úmido',region:'selva',adj:{jungle:6,deciduous:5,lush:4,meadow:1,pine:0,farmland:-6,dry:-6,scrub:-6}}
+};
+const KEYS=Object.keys(BIOMES),DIRS=[{q:1,r:0},{q:1,r:-1},{q:0,r:-1},{q:-1,r:0},{q:-1,r:1},{q:0,r:1}],RADIUS=6,HEX_W=92,HEX_H=106,STEP_X=92,STEP_Y=79.5;
+const POIS={village:{icon:'⌂',label:'Vila',allowed:['farmland','meadow','lush']},ruin:{icon:'⌁',label:'Ruínas',allowed:KEYS},tower:{icon:'♜',label:'Torre',allowed:['farmland','meadow','lush','dry','scrub']},shrine:{icon:'✦',label:'Santuário',allowed:['lush','meadow','deciduous','pine']},cave:{icon:'◒',label:'Caverna',allowed:['scrub','pine','deciduous','jungle']},camp:{icon:'△',label:'Acampamento',allowed:['dry','scrub','meadow','lush']}};
+const state=JSON.parse(localStorage.getItem('wwn_world_engine_v1')||'null')||{};let world=[],byKey={},current=0,pan=state.pan||{x:0,y:0},zoom=Number.isFinite(state.zoom)?state.zoom:.82,day=state.day||1,minutes=state.minutes??480;
+function key(q,r){return `${q},${r}`}function rand(seed){const x=Math.sin(seed*12.9898+78.233)*43758.5453;return x-Math.floor(x)}function hd(a,b){const dq=a.q-b.q,dr=a.r-b.r;return(Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2}function px(t){return{x:STEP_X*(t.q+t.r/2),y:STEP_Y*t.r}}function tile(q,r){return byKey[key(q,r)]}function idx(q,r){return world.findIndex(t=>t.q===q&&t.r===r)}
+function zoneBias(t,c){const d0=hd(t,{q:0,r:0}),dDry=hd(t,{q:4,r:1}),dWet=hd(t,{q:-4,r:2}),dCold=hd(t,{q:2,r:-4});let s=0;if(c==='farmland')s+=Math.max(0,13-d0*2.7);if(c==='meadow')s+=Math.max(0,9-d0*1.4);if(c==='dry')s+=Math.max(0,13-dDry*2.2);if(c==='scrub')s+=Math.max(0,11-dDry*2);if(c==='jungle')s+=Math.max(0,14-dWet*2.4);if(c==='lush')s+=Math.max(0,11-dWet*1.7)+Math.max(0,5-d0);if(c==='pine')s+=Math.max(0,13-dCold*2.3);if(c==='deciduous')s+=Math.max(0,9-Math.min(dCold,dWet)*1.15)+Math.max(0,7-d0*1.1);return s}
+function score(t,c){let s=zoneBias(t,c),bad=false;for(const d of DIRS){const n=tile(t.q+d.q,t.r+d.r);if(!n?.biome)continue;const v=BIOMES[c].adj[n.biome]??-4;if(v<0)bad=true;s+=v*3+(c===n.biome?1.2:0)}if(bad)s-=120;s+=rand((t.q+19)*101+(t.r+23)*67+c.length*17)*1.4;return s}
+function generate(){world=[];byKey={};for(let q=-RADIUS;q<=RADIUS;q++)for(let r=-RADIUS;r<=RADIUS;r++)if(hd({q,r},{q:0,r:0})<=RADIUS){const t={q,r,biome:null,seen:false,visited:false,poi:null};world.push(t);byKey[key(q,r)]=t}world.sort((a,b)=>hd(a,{q:0,r:0})-hd(b,{q:0,r:0})||a.r-b.r||a.q-b.q);for(const t of world){if(t.q===0&&t.r===0){t.biome='farmland';continue}let best='meadow',bs=-1e9;for(const c of KEYS){const sc=score(t,c);if(sc>bs){bs=sc;best=c}}t.biome=best}for(let p=0;p<3;p++)repairPass();placePois()}
+function repairPass(){for(const t of world){if(t.q===0&&t.r===0)continue;let best=t.biome,bs=score(t,t.biome)+2;for(const c of KEYS){const sc=score(t,c);if(sc>bs){bs=sc;best=c}}t.biome=best}}
+function audit(){let bad=0,total=0;for(const t of world)for(const d of DIRS){const n=tile(t.q+d.q,t.r+d.r);if(!n)continue;if(key(t.q,t.r)>key(n.q,n.r))continue;total++;if((BIOMES[t.biome].adj[n.biome]??-9)<0||(BIOMES[n.biome].adj[t.biome]??-9)<0)bad++}return{bad,total}}
+function placePois(){for(const t of world){const r=rand((t.q+31)*43+(t.r+29)*89);if(r<.79)continue;const choices=Object.entries(POIS).filter(([,p])=>p.allowed.includes(t.biome));if(!choices.length)continue;const pick=choices[Math.floor(rand((t.q+7)*97+(t.r+5)*53)*choices.length)];t.poi=pick[0]}const center=tile(0,0);center.poi='village'}
+function restore(){const seen=new Set(state.seen||[]),visited=new Set(state.visited||[]);for(const t of world){t.seen=seen.size?seen.has(key(t.q,t.r)):hd(t,{q:0,r:0})<=1;t.visited=visited.has(key(t.q,t.r))}const ck=state.current&&byKey[state.current]?state.current:'0,0';current=idx(...ck.split(',').map(Number));world[current].seen=world[current].visited=true}
+function bounds(){const pts=world.map(px),minX=Math.min(...pts.map(p=>p.x)),maxX=Math.max(...pts.map(p=>p.x+HEX_W)),minY=Math.min(...pts.map(p=>p.y)),maxY=Math.max(...pts.map(p=>p.y+HEX_H));return{minX,minY,w:maxX-minX,h:maxY-minY}}
+function applyTransform(){mapCanvas.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`}function clamp(){const map=document.getElementById('map'),c=document.getElementById('mapCanvas'),pad=55,minX=Math.min(pad,map.clientWidth-c.offsetWidth*zoom-pad),minY=Math.min(pad,map.clientHeight-c.offsetHeight*zoom-pad);pan.x=Math.max(minX,Math.min(pad,pan.x));pan.y=Math.max(minY,Math.min(pad,pan.y))}
+function render(){const c=document.getElementById('mapCanvas'),b=bounds();c.innerHTML='';c.style.width=b.w+120+'px';c.style.height=b.h+120+'px';world.forEach((t,i)=>{const p=px(t),e=document.createElement('div');e.className='hex '+(t.seen?'seen ':'')+(t.visited?'visited ':'')+(i===current?'current':'');e.style.left=p.x-b.minX+35+'px';e.style.top=p.y-b.minY+35+'px';const poi=t.seen&&t.poi?POIS[t.poi]:null;e.innerHTML=`<div class="terrain"></div><div class="shade"></div><span class="mark">${i===current?'⌖':(!t.seen?'?':'')}</span>${poi?`<span class="poi">${poi.icon}</span>`:''}`;e.querySelector('.terrain').style.backgroundImage=`url("${BIOMES[t.biome].asset}")`;e.addEventListener('click',()=>{if(!drag.moved)travel(i)});c.appendChild(e)});clamp();applyTransform();updateHud();save()}
+function updateHud(){const t=world[current],a=audit(),poi=t.poi?` • ${POIS[t.poi].label}`:'';document.getElementById('hexName').textContent=BIOMES[t.biome].name+poi;document.getElementById('regionPill').textContent='Região: '+BIOMES[t.biome].region;document.getElementById('auditPill').textContent=a.bad?`Ajustes ${a.bad}`:'Coerência ✓';document.getElementById('clockPill').textContent=`Dia ${day} • ${fmt(minutes)}`;document.getElementById('travelText').textContent='adjacente';document.getElementById('hexText').textContent=`${BIOMES[t.biome].climate}; custo-base ${BIOMES[t.biome].cost}h. Arraste para explorar o mapa.`}
+function fmt(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}function advance(h){minutes+=Math.round(h*60);while(minutes>=1440){minutes-=1440;day++}}
+function travel(i){if(i===current){updateHud();return}const a=world[current],b=world[i];if(hd(a,b)!==1){setInfo('Movimento inválido','Escolha um dos seis hexes adjacentes.');return}advance((BIOMES[a.biome].cost+BIOMES[b.biome].cost)/2);current=i;b.seen=b.visited=true;for(const d of DIRS){const n=tile(b.q+d.q,b.r+d.r);if(n&&rand((n.q+13)*61+(n.r+17)*37+day)>.68)n.seen=true}setInfo(BIOMES[b.biome].name,`Viagem concluída às ${fmt(minutes)}.`);render()}
+function explore(){const t=world[current];let n=0;for(const d of DIRS){const x=tile(t.q+d.q,t.r+d.r);if(x&&!x.seen){x.seen=true;n++}}advance(2);setInfo('Exploração concluída',n?`${n} hex(es) adjacentes revelados.`:'Os arredores imediatos já estavam revelados.');render()}function camp(){advance(8);setInfo('Acampamento',`Descanso registrado. Agora é Dia ${day}, ${fmt(minutes)}.`);render()}
+function setInfo(a,b){document.getElementById('hexName').textContent=a;document.getElementById('hexText').textContent=b;document.getElementById('gmLog').insertAdjacentHTML('afterbegin',`<div>${a}: ${b}</div>`)}function save(){localStorage.setItem('wwn_world_engine_v1',JSON.stringify({current:key(world[current].q,world[current].r),seen:world.filter(t=>t.seen).map(t=>key(t.q,t.r)),visited:world.filter(t=>t.visited).map(t=>key(t.q,t.r)),pan,zoom,day,minutes}))}
+function zoomBy(d){zoom=Math.max(.58,Math.min(1.25,zoom+d));clamp();applyTransform();save()}function recenterMap(){const map=document.getElementById('map'),b=bounds(),p=px(world[current]);pan.x=map.clientWidth/2-((p.x-b.minX+35)+HEX_W/2)*zoom;pan.y=map.clientHeight/2-((p.y-b.minY+35)+HEX_H/2)*zoom;clamp();applyTransform();save()}
+const drag={active:false,moved:false,sx:0,sy:0,bx:0,by:0};function attachPan(){const m=document.getElementById('map');m.addEventListener('pointerdown',e=>{drag.active=true;drag.moved=false;drag.sx=e.clientX;drag.sy=e.clientY;drag.bx=pan.x;drag.by=pan.y;m.classList.add('dragging');m.setPointerCapture(e.pointerId)});m.addEventListener('pointermove',e=>{if(!drag.active)return;const dx=e.clientX-drag.sx,dy=e.clientY-drag.sy;if(Math.abs(dx)>6||Math.abs(dy)>6)drag.moved=true;pan.x=drag.bx+dx;pan.y=drag.by+dy;clamp();applyTransform()});const end=()=>{if(!drag.active)return;drag.active=false;m.classList.remove('dragging');save();setTimeout(()=>drag.moved=false,0)};m.addEventListener('pointerup',end);m.addEventListener('pointercancel',end)}
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));if(v==='explorar'){render();setTimeout(()=>{if(!state.pan)recenterMap()},20)}}function note(t){document.getElementById('playerLog').insertAdjacentHTML('afterbegin','<div>'+t+'</div>')}function useAction(id,msg){document.getElementById(id).textContent='○';note(msg)}function nextRound(){round.textContent=+round.textContent+1;mainA.textContent='●';moveA.textContent='●'}function gm(){let x=gmInput;if(!x.value)return;gmLog.insertAdjacentHTML('afterbegin','<div>Contexto solicitado: '+x.value.replace(/[<>]/g,'')+'</div>');x.value=''}
+generate();restore();render();attachPan();const a=audit();gmLog.insertAdjacentHTML('afterbegin',`<div>Atlas: ${world.length} hexes; ${a.total} adjacências auditadas; ${a.bad} incompatibilidades.</div>`);
 </script></body></html>
