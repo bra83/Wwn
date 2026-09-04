@@ -1,0 +1,113 @@
+name: Apply visible WWN assets
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-visible-assets.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Atlas asset rendering
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          js = Path('world.js').read_text(encoding='utf-8')
+          css = Path('world.css').read_text(encoding='utf-8')
+
+          # New storage version so the user immediately gets the new visual baseline.
+          js = js.replace("STORAGE='wwn_world_engine_v3'", "STORAGE='wwn_world_engine_v4'")
+
+          # Put unmistakable terrain features in the starting explored region.
+          marker = "function assignFeatures(){"
+          injection = "function assignFeatures(){[['2,-1','foothills_gentle','highland'],['2,-2','mountains_low','highland'],['-1,2','lake','lush']].forEach(x=>forceFeature(...x));"
+          if marker in js and injection not in js:
+              js = js.replace(marker, injection, 1)
+
+          # Start with a useful explored window and reveal POIs already inside it.
+          js = re.sub(
+              r"function restoreWorldState\(\)\{.*?updateWeather\(true\)\}",
+              "function restoreWorldState(){const hasSeen=Array.isArray(saved.seen)&&saved.seen.length>0;if(hasSeen)saved.seen.forEach(id=>{if(byKey[id])byKey[id].seen=true});else world.forEach(t=>{if(dist(t,{q:0,r:0})<=2)t.seen=true});if(Array.isArray(saved.visited))saved.visited.forEach(id=>{if(byKey[id])byKey[id].visited=true});const ck=saved.current&&byKey[saved.current]?saved.current:'0,0';current=world.findIndex(t=>key(t.q,t.r)===ck);if(current<0)current=0;world[current].seen=true;world[current].visited=true;['0,0','1,1','-1,1'].forEach(id=>{if(byKey[id]?.poi){byKey[id].seen=true;knownPOIs.add(id)}});for(const t of world)if(t.seen&&t.poi&&dist(t,{q:0,r:0})<=2)knownPOIs.add(key(t.q,t.r));updateWeather(true)}",
+              js,
+              count=1,
+              flags=re.S
+          )
+
+          # Feature artwork is a full hex tile, not a translucent screen-blend decoration.
+          css = re.sub(
+              r"\.hex \.feature\{[^}]*\}",
+              ".hex .feature{background-size:230% auto;transform:scale(1.02);opacity:1;mix-blend-mode:normal;filter:saturate(.96) brightness(1.02)}",
+              css,
+              count=1
+          )
+
+          # POI artwork is also a full hex tile. The old 24px implementation made it effectively invisible.
+          css = re.sub(
+              r"\.hex \.poi\{[^}]*\}",
+              ".hex .poi{position:absolute;z-index:5;inset:0;width:auto;height:auto;clip-path:inherit;background:center/230% auto no-repeat;filter:saturate(1.02) brightness(1.03) drop-shadow(0 2px 3px #000);opacity:0;transition:opacity .2s}",
+              css,
+              count=1
+          )
+          css = css.replace('.hex.poi-known .poi{opacity:1}', '.hex.poi-known .poi{opacity:1}.hex.poi-known .shade{background:#0000}')
+
+          # The POI detail card must crop the transparent margins too.
+          css = re.sub(
+              r"\.location-art\{([^}]*)background:#071012 center/cover no-repeat([^}]*)\}",
+              r".location-art{\1background:#071012 center/220% auto no-repeat\2}",
+              css,
+              count=1
+          )
+
+          # Use the actual fog artwork rather than only a CSS gradient.
+          css = re.sub(
+              r"\.map-weather\.fog\{[^}]*\}",
+              ".map-weather.fog{opacity:.34;background-image:linear-gradient(#dce5e155,#dce5e122),url('assets/weather_time_07_fog.png');background-position:center;background-size:cover;mix-blend-mode:screen}",
+              css,
+              count=1
+          )
+
+          # Make known POIs visually readable without a solid selected border.
+          css += "\n.hex.poi-known{filter:drop-shadow(0 0 5px rgba(213,170,91,.18))}.hex.poi-known.current{filter:drop-shadow(0 0 6px rgba(239,205,132,.35)) drop-shadow(0 0 15px rgba(213,170,91,.55)) drop-shadow(0 0 26px rgba(213,170,91,.30))}\n"
+
+          Path('world.js').write_text(js, encoding='utf-8')
+          Path('world.css').write_text(css, encoding='utf-8')
+          PY
+
+          node --check world.js
+          grep -q "terrain_features_03_low_mountains" world.js
+          grep -q "poi_inhabited_02_farming_village" world.js
+          grep -q "background:center/230% auto" world.css
+
+      - name: Bump module cache versions
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('world.css?v=3','world.css?v=4').replace('world.js?v=3','world.js?v=4')
+          p.write_text(s,encoding='utf-8')
+          PY
+
+      - name: Commit visual asset integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add world.js world.css index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Render WWN features and POIs as visible full-hex assets'
+          git push
