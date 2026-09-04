@@ -31,20 +31,32 @@ jobs:
           test -s index.html
           test -s world.css
           test -s world.js
+          test -s world-v5.css
+          test -s world-v5.js
           node --check world.js
+          node --check world-v5.js
           grep -q 'world.css?v=' index.html
           grep -q 'world.js?v=' index.html
+          grep -q 'world-v5.css?v=' index.html
+          grep -q 'world-v5.js?v=' index.html
           grep -q 'function enterPOI' world.js
           grep -q 'function exportWorld' world.js
           grep -q 'wwn_world_engine_v4' world.js
-          grep -q 'background:center/230% auto' world.css
+          grep -q 'function wwnTravelSelected' world-v5.js
+          grep -q 'function wwnOpenSearch' world-v5.js
+          grep -q 'function wwnOpenLayers' world-v5.js
+          grep -q 'function wwnOpenNotes' world-v5.js
+          grep -q 'hex-detail' world-v5.css
+          grep -q 'atlas-commandbar' world-v5.css
           test -s assets/terrain_base_01_lush_grassland.png
           test -s assets/terrain_base_10_dark_swamp.png
           test -s assets/terrain_base_14_snowfield.png
           test -s assets/terrain_features_04_high_mountains.png
+          test -s assets/terrain_features_09_freshwater_lake.png
           test -s assets/terrain_features_10_inland_sea.png
           test -s assets/terrain_features_14_island.png
           test -s assets/poi_inhabited_02_farming_village.png
+          test -s assets/poi_inhabited_15_stone_bridge.png
           test -s assets/poi_dangerous_01_overgrown_ruins.png
           test -s assets/weather_time_07_fog.png
           test -s assets/weather_time_16_night_moon.png
@@ -66,7 +78,7 @@ jobs:
           site='${{ steps.deployment.outputs.page_url }}'
           ok=0
           for attempt in $(seq 1 12); do
-            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'WORLD WITHOUT NUMBER' /tmp/live-index.html; then
+            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'world-v5.js' /tmp/live-index.html; then
               ok=1
               break
             fi
@@ -75,15 +87,20 @@ jobs:
           test "$ok" = 1
           curl -fsSL "${site}world.js" -o /tmp/live-world.js
           curl -fsSL "${site}world.css" -o /tmp/live-world.css
+          curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
+          curl -fsSL "${site}world-v5.css" -o /tmp/live-v5.css
           node --check /tmp/live-world.js
-          grep -q 'function enterPOI' /tmp/live-world.js
-          grep -q 'wwn_world_engine_v4' /tmp/live-world.js
-          grep -q 'background:center/230% auto' /tmp/live-world.css
+          node --check /tmp/live-v5.js
+          grep -q 'function wwnTravelSelected' /tmp/live-v5.js
+          grep -q 'function wwnOpenSearch' /tmp/live-v5.js
+          grep -q 'hex-detail' /tmp/live-v5.css
           for asset in \
             assets/terrain_base_10_dark_swamp.png \
             assets/terrain_features_04_high_mountains.png \
+            assets/terrain_features_09_freshwater_lake.png \
             assets/terrain_features_10_inland_sea.png \
             assets/poi_inhabited_02_farming_village.png \
+            assets/poi_inhabited_15_stone_bridge.png \
             assets/poi_dangerous_01_overgrown_ruins.png \
             assets/weather_time_07_fog.png; do
             curl -fsSL "${site}${asset}" -o /tmp/check.bin
