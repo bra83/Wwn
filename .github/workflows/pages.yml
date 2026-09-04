@@ -28,7 +28,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js assets/ui-icons.svg; do test -s "$file"; done
+          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js fog-v7.css assets/ui-icons.svg; do test -s "$file"; done
           node --check world.js
           node --check world-v5.js
           node --check app-v6.js
@@ -46,6 +46,9 @@ jobs:
           grep -q 'function oracleRoll' app-v6.js
           grep -q 'function combatAttack' app-v6.js
           grep -q 'fog-unknown' app-v6.css
+          grep -q "@import url('fog-v7.css?v=1')" world-v5.css
+          grep -q 'poi-label' fog-v7.css
+          grep -q 'map-weather{display:none!important}' fog-v7.css
           grep -q 'symbol id="compass"' assets/ui-icons.svg
           grep -q 'symbol id="swords"' assets/ui-icons.svg
           test -s assets/terrain_features_04_high_mountains.png
@@ -81,12 +84,16 @@ jobs:
           curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
           curl -fsSL "${site}app-v6.js" -o /tmp/live-app.js
           curl -fsSL "${site}app-v6.css" -o /tmp/live-app.css
+          curl -fsSL "${site}world-v5.css" -o /tmp/live-v5.css
+          curl -fsSL "${site}fog-v7.css" -o /tmp/live-fog.css
           curl -fsSL "${site}assets/ui-icons.svg" -o /tmp/live-icons.svg
           node --check /tmp/live-world.js
           node --check /tmp/live-v5.js
           node --check /tmp/live-app.js
           grep -q 'function oracleRoll' /tmp/live-app.js
           grep -q 'fog-unknown' /tmp/live-app.css
+          grep -q 'fog-v7.css?v=1' /tmp/live-v5.css
+          grep -q 'z-index:30!important' /tmp/live-fog.css
           grep -q 'symbol id="home"' /tmp/live-icons.svg
           for asset in assets/terrain_features_04_high_mountains.png assets/terrain_features_09_freshwater_lake.png assets/poi_inhabited_06_royal_castle.png assets/poi_dangerous_01_overgrown_ruins.png assets/weather_time_07_fog.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
