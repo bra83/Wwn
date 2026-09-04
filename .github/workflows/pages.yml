@@ -32,10 +32,12 @@ jobs:
           test -s world.css
           test -s world.js
           node --check world.js
-          grep -q 'world.css?v=3' index.html
-          grep -q 'world.js?v=3' index.html
+          grep -q 'world.css?v=' index.html
+          grep -q 'world.js?v=' index.html
           grep -q 'function enterPOI' world.js
           grep -q 'function exportWorld' world.js
+          grep -q 'wwn_world_engine_v4' world.js
+          grep -q 'background:center/230% auto' world.css
           test -s assets/terrain_base_01_lush_grassland.png
           test -s assets/terrain_base_10_dark_swamp.png
           test -s assets/terrain_base_14_snowfield.png
@@ -71,15 +73,17 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
-          curl -fsSL "${site}world.js?v=3" -o /tmp/live-world.js
-          curl -fsSL "${site}world.css?v=3" -o /tmp/live-world.css
+          curl -fsSL "${site}world.js" -o /tmp/live-world.js
+          curl -fsSL "${site}world.css" -o /tmp/live-world.css
           node --check /tmp/live-world.js
           grep -q 'function enterPOI' /tmp/live-world.js
-          grep -q '.poi-known' /tmp/live-world.css
+          grep -q 'wwn_world_engine_v4' /tmp/live-world.js
+          grep -q 'background:center/230% auto' /tmp/live-world.css
           for asset in \
             assets/terrain_base_10_dark_swamp.png \
             assets/terrain_features_04_high_mountains.png \
             assets/terrain_features_10_inland_sea.png \
+            assets/poi_inhabited_02_farming_village.png \
             assets/poi_dangerous_01_overgrown_ruins.png \
             assets/weather_time_07_fog.png; do
             curl -fsSL "${site}${asset}" -o /tmp/check.bin
