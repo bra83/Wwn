@@ -1,0 +1,115 @@
+name: Import full WWN assets
+
+on:
+  push:
+    paths:
+      - '.github/workflows/import-full-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve firestorage download and import full asset pack
+        shell: bash
+        env:
+          SHARE_URL: https://firestorage.ai/ja/f/SYPvQq8bufW1
+          FIRE_FILE_ID: 01a06c68f896716f90fad817281fce02
+          FIRE_PUBLIC_ID: iudk1cuSs5L9O5AC
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,re,json,urllib.request,urllib.parse,sys
+          share=os.environ['SHARE_URL']
+          file_id=os.environ['FIRE_FILE_ID']
+          public_id=os.environ['FIRE_PUBLIC_ID']
+          headers={'User-Agent':'Mozilla/5.0','Referer':share,'Accept':'*/*'}
+          def req(url,method='GET',data=None,headers2=None):
+              h=headers.copy(); h.update(headers2 or {})
+              if data is not None and not isinstance(data,(bytes,bytearray)): data=data.encode()
+              r=urllib.request.Request(url,data=data,headers=h,method=method)
+              try:
+                  with urllib.request.urlopen(r,timeout=25) as x:
+                      return x.status,dict(x.headers),x.read()
+              except Exception as e:
+                  code=getattr(e,'code',0); body=getattr(e,'read',lambda:b'')()
+                  return code,dict(getattr(e,'headers',{}) or {}),body
+          st,hd,html=req(share)
+          print('share status',st,'bytes',len(html))
+          open('/tmp/share.html','wb').write(html)
+          text=html.decode('utf-8','ignore')
+          scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)',text)
+          js=''
+          for src in scripts:
+              u=urllib.parse.urljoin(share,src)
+              s,h,b=req(u)
+              if s==200:
+                  t=b.decode('utf-8','ignore'); js+='\n'+t
+          combined=text+'\n'+js
+          open('/tmp/fire-bundle.txt','w').write(combined)
+          for pat in ['downloadUrl','api.firestorage.ai','/download','files/']:
+              print('PATTERN',pat,'count',combined.count(pat))
+          # Discover likely ids/keys around download logic.
+          for m in re.finditer(r'downloadUrl|/download|api\.firestorage\.ai',combined):
+              print('CTX',combined[max(0,m.start()-220):m.start()+420].replace('\n',' ')[:700])
+          ids=[file_id,public_id]
+          # include path-like object ids and UUID-ish candidates from page/bundles
+          ids += re.findall(r'[A-Za-z0-9_-]{8,40}/[A-Za-z0-9._-]{4,80}',combined)
+          ids += re.findall(r'[a-f0-9]{32}',combined)
+          ids += re.findall(r'[A-Za-z0-9_-]{16}',combined)
+          seen=[]
+          for x in ids:
+              if x not in seen: seen.append(x)
+          bases=['https://api.firestorage.ai/dev/file','https://api.firestorage.ai']
+          endpoints=[]
+          for base in bases:
+              for ident in seen[:120]:
+                  endpoints += [f'{base}/files/{urllib.parse.quote(ident,safe="")}/download',f'{base}/files/{ident}/download']
+          found=None
+          bodies=[None,b'{}',json.dumps({'shareUrl':share}).encode(),json.dumps({'publicId':public_id}).encode(),json.dumps({'fileId':file_id}).encode()]
+          for url in endpoints:
+              for body in bodies:
+                  h={'Content-Type':'application/json'} if body else {}
+                  s,hh,b=req(url,'POST',body,h)
+                  if s in (200,201):
+                      ct=hh.get('Content-Type','')
+                      print('POST OK',url,'ct',ct,'bytes',len(b))
+                      if b[:2]==b'PK':
+                          open('/tmp/pack.zip','wb').write(b); found='/tmp/pack.zip'; break
+                      try:
+                          j=json.loads(b.decode())
+                          du=j.get('downloadUrl') or j.get('download_url') or j.get('url')
+                          if du:
+                              print('download url obtained')
+                              s2,h2,b2=req(du)
+                              if s2==200 and b2[:2]==b'PK':
+                                  open('/tmp/pack.zip','wb').write(b2); found='/tmp/pack.zip'; break
+                      except Exception: pass
+              if found: break
+          if not found:
+              print('No direct download resolved. Candidate IDs sample:',seen[:40])
+              sys.exit(22)
+          print('ZIP resolved',os.path.getsize(found))
+          PY
+          unzip -t /tmp/pack.zip
+          rm -rf /tmp/full && mkdir -p /tmp/full
+          unzip -q /tmp/pack.zip -d /tmp/full
+          mkdir -p assets
+          cp -f /tmp/full/assets/*.png assets/
+          echo "asset_count=$(find assets -maxdepth 1 -type f -name '*.png' | wc -l)"
+          test "$(find assets -maxdepth 1 -type f -name '*.png' | wc -l)" -ge 75
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets
+          if git diff --cached --quiet; then
+            echo 'Assets already complete.'
+          else
+            git commit -m 'Import complete WWN terrain, feature, POI and weather asset library'
+            git push
+          fi
