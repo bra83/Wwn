@@ -24,46 +24,38 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Resolve firestorage runtime package
+      - name: Inspect firestorage download client
         shell: bash
         run: |
           set -euo pipefail
-          share='https://firestorage.ai/ja/f/PJmIjMoXk-LZ'
-          curl -L --fail --silent --show-error -A 'Mozilla/5.0' -D /tmp/fire.headers "$share" -o /tmp/fire.body
-          echo '=== RESPONSE HEADERS ==='
-          cat /tmp/fire.headers
-          echo '=== BODY TYPE/SIZE ==='
-          file /tmp/fire.body || true
-          wc -c /tmp/fire.body
-
-          if unzip -tqq /tmp/fire.body >/dev/null 2>&1; then
-            mv /tmp/fire.body /tmp/runtime.zip
-          else
-            echo '=== FIRESTORAGE PAGE URL CANDIDATES ==='
-            python3 - <<'PY'
-          import html, re
+          base='https://firestorage.ai'
+          js='/_next/static/chunks/app/(files)/ja/f/page-4d19ae0a4ce39d79.js'
+          curl -L --fail --silent --show-error -A 'Mozilla/5.0' "$base$js" -o /tmp/fire.js
+          echo '=== JS SIZE ==='
+          wc -c /tmp/fire.js
+          echo '=== API/DOWNLOAD STRING CANDIDATES ==='
+          python3 - <<'PY'
+          import re
           from pathlib import Path
-          s = html.unescape(Path('/tmp/fire.body').read_text('utf-8', errors='ignore'))
-          vals = []
-          vals += re.findall(r'https?://[^\s"\'<>]+', s)
-          vals += re.findall(r'(?:href|src)=["\']([^"\']+)', s, flags=re.I)
+          s=Path('/tmp/fire.js').read_text('utf-8',errors='ignore')
+          pats=[
+            r'https?://[^"\'`\\ ]+',
+            r'/api/[^"\'`\\ ]+',
+            r'[^"\'`\\ ]{0,120}download[^"\'`\\ ]{0,180}',
+            r'[^"\'`\\ ]{0,120}share[^"\'`\\ ]{0,180}',
+            r'[^"\'`\\ ]{0,120}publicId[^"\'`\\ ]{0,180}',
+            r'[^"\'`\\ ]{0,120}shareId[^"\'`\\ ]{0,180}',
+          ]
           seen=[]
-          for v in vals:
-              if v not in seen and any(k in v.lower() for k in ('download','file','api','zip','pjmijmoxk-lz','wc5bv1f36zcbluv')):
-                  seen.append(v)
-          for v in seen[:200]:
-              print(v)
+          for pat in pats:
+            for m in re.findall(pat,s,flags=re.I):
+              if m not in seen:
+                seen.append(m)
+          for x in seen[:300]: print(x)
           PY
-            echo '=== FIRESTORAGE PAGE EXCERPT ==='
-            head -c 12000 /tmp/fire.body | sed 's/></>\n</g' | head -n 200
-            exit 42
-          fi
-
-          echo 'c6da2f1f6c0980235f0fc9f7b76cd45e58aaf080a21f605df776e7ad086116b3  /tmp/runtime.zip' | sha256sum -c -
-          rm -rf assets
-          unzip -q /tmp/runtime.zip -d .
-          test -f assets/terrain_base_01_lush_grassland.png
-          test -f assets/terrain_base_08_humid_jungle.png
+          echo '=== FETCH CALLS ==='
+          grep -oE '.{0,180}(fetch\(|axios|XMLHttpRequest).{0,260}' /tmp/fire.js | head -n 100 || true
+          exit 43
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
