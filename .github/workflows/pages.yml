@@ -28,38 +28,33 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s index.html
-          test -s world.css
-          test -s world.js
-          test -s world-v5.css
-          test -s world-v5.js
+          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js assets/ui-icons.svg; do test -s "$file"; done
           node --check world.js
           node --check world-v5.js
-          grep -q 'world.css?v=' index.html
-          grep -q 'world.js?v=' index.html
-          grep -q 'world-v5.css?v=' index.html
-          grep -q 'world-v5.js?v=' index.html
-          grep -q 'function enterPOI' world.js
-          grep -q 'function exportWorld' world.js
-          grep -q 'wwn_world_engine_v4' world.js
+          node --check app-v6.js
+          grep -q 'app-v6.css?v=' index.html
+          grep -q 'app-v6.js?v=' index.html
+          grep -q 'id="inicio"' index.html
+          grep -q 'id="personagem"' index.html
+          grep -q 'id="explorar"' index.html
+          grep -q 'id="confronto"' index.html
+          grep -q 'id="mestre"' index.html
+          grep -q 'id="sessoes"' index.html
+          grep -q 'id="favoritos"' index.html
+          grep -q 'id="configuracoes"' index.html
           grep -q 'function wwnTravelSelected' world-v5.js
-          grep -q 'function wwnOpenSearch' world-v5.js
-          grep -q 'function wwnOpenLayers' world-v5.js
-          grep -q 'function wwnOpenNotes' world-v5.js
-          grep -q 'hex-detail' world-v5.css
-          grep -q 'atlas-commandbar' world-v5.css
-          test -s assets/terrain_base_01_lush_grassland.png
-          test -s assets/terrain_base_10_dark_swamp.png
-          test -s assets/terrain_base_14_snowfield.png
+          grep -q 'function oracleRoll' app-v6.js
+          grep -q 'function combatAttack' app-v6.js
+          grep -q 'fog-unknown' app-v6.css
+          grep -q 'symbol id="compass"' assets/ui-icons.svg
+          grep -q 'symbol id="swords"' assets/ui-icons.svg
           test -s assets/terrain_features_04_high_mountains.png
           test -s assets/terrain_features_09_freshwater_lake.png
           test -s assets/terrain_features_10_inland_sea.png
-          test -s assets/terrain_features_14_island.png
           test -s assets/poi_inhabited_02_farming_village.png
-          test -s assets/poi_inhabited_15_stone_bridge.png
+          test -s assets/poi_inhabited_06_royal_castle.png
           test -s assets/poi_dangerous_01_overgrown_ruins.png
           test -s assets/weather_time_07_fog.png
-          test -s assets/weather_time_16_night_moon.png
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -78,32 +73,20 @@ jobs:
           site='${{ steps.deployment.outputs.page_url }}'
           ok=0
           for attempt in $(seq 1 12); do
-            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'world-v5.js' /tmp/live-index.html; then
-              ok=1
-              break
-            fi
+            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'app-v6.js' /tmp/live-index.html; then ok=1; break; fi
             sleep 5
           done
           test "$ok" = 1
           curl -fsSL "${site}world.js" -o /tmp/live-world.js
-          curl -fsSL "${site}world.css" -o /tmp/live-world.css
           curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
-          curl -fsSL "${site}world-v5.css" -o /tmp/live-v5.css
+          curl -fsSL "${site}app-v6.js" -o /tmp/live-app.js
+          curl -fsSL "${site}app-v6.css" -o /tmp/live-app.css
+          curl -fsSL "${site}assets/ui-icons.svg" -o /tmp/live-icons.svg
           node --check /tmp/live-world.js
           node --check /tmp/live-v5.js
-          grep -q 'function wwnTravelSelected' /tmp/live-v5.js
-          grep -q 'function wwnOpenSearch' /tmp/live-v5.js
-          grep -q 'hex-detail' /tmp/live-v5.css
-          for asset in \
-            assets/terrain_base_10_dark_swamp.png \
-            assets/terrain_features_04_high_mountains.png \
-            assets/terrain_features_09_freshwater_lake.png \
-            assets/terrain_features_10_inland_sea.png \
-            assets/poi_inhabited_02_farming_village.png \
-            assets/poi_inhabited_15_stone_bridge.png \
-            assets/poi_dangerous_01_overgrown_ruins.png \
-            assets/weather_time_07_fog.png; do
-            curl -fsSL "${site}${asset}" -o /tmp/check.bin
-            test -s /tmp/check.bin
-          done
+          node --check /tmp/live-app.js
+          grep -q 'function oracleRoll' /tmp/live-app.js
+          grep -q 'fog-unknown' /tmp/live-app.css
+          grep -q 'symbol id="home"' /tmp/live-icons.svg
+          for asset in assets/terrain_features_04_high_mountains.png assets/terrain_features_09_freshwater_lake.png assets/poi_inhabited_06_royal_castle.png assets/poi_dangerous_01_overgrown_ruins.png assets/weather_time_07_fog.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
