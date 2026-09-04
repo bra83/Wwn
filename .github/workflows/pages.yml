@@ -3,12 +3,10 @@ name: Deploy Braseiro WWN to GitHub Pages
 on:
   push:
     branches: ["main"]
-    paths-ignore:
-      - "assets/**"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -26,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Restore and validate exact WWN runtime assets
+      - name: Validate exact WWN runtime assets
         shell: bash
         run: |
           set -euo pipefail
@@ -40,46 +38,8 @@ jobs:
           23fa3c9b5e0fd8277063bafcdb609dea48b851087742adf90ee5b2766e04e288  assets/terrain_base_07_dense_pine_forest.png
           c34f8258ebbda766aac79822c94166d697d741f0ba23503d7f3f4e7061673815  assets/terrain_base_08_humid_jungle.png
           EOF
-
-          if sha256sum -c /tmp/asset-sha256.txt >/dev/null 2>&1; then
-            echo 'Runtime assets already present and valid.'
-            exit 0
-          fi
-
-          api='https://api.firestorage.ai/dev/file'
-          object='wC5bv1f36zCBbLUV/F8V6UV'
-          file_id='01a06af08ec872e1931be5966fd569a1'
-          endpoint="$api/objects/$object/files/$file_id/download"
-
-          curl -L --fail --silent --show-error -X POST "$endpoint" -o /tmp/download.json
-          cat /tmp/download.json
-          download_url="$(python3 - <<'PY'
-          import json
-          with open('/tmp/download.json', encoding='utf-8') as f:
-              print(json.load(f)['downloadUrl'])
-          PY
-          )"
-          test -n "$download_url"
-          curl -L --fail --silent --show-error "$download_url" -o /tmp/runtime.zip
-          echo 'c6da2f1f6c0980235f0fc9f7b76cd45e58aaf080a21f605df776e7ad086116b3  /tmp/runtime.zip' | sha256sum -c -
-
-          rm -rf assets
-          unzip -q /tmp/runtime.zip -d .
           sha256sum -c /tmp/asset-sha256.txt
-
-      - name: Persist validated runtime assets in repository
-        shell: bash
-        run: |
-          set -euo pipefail
-          git add assets
-          if git diff --cached --quiet; then
-            echo 'No asset changes to commit.'
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Persist validated WWN runtime assets'
-          git push origin HEAD:main
+          test -f index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
