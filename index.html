@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Braseiro WWN — Vertical Slice 0.1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&display=swap');
+:root{--bg:#071012;--panel:#0B1517;--cream:#DEC99F;--bronze:#B58B4D;--teal:#2EB5C5;--amber:#D58B2B;--danger:#CA5B39;--violet:#86539C}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--cream);font-family:"Barlow Condensed",sans-serif}
+button{font:inherit}.app{max-width:415px;min-height:100dvh;margin:auto;background:linear-gradient(180deg,#071012,#091517);position:relative;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.top{padding:18px 18px 12px;border-bottom:1px solid #b58b4d55;display:flex;justify-content:space-between;align-items:end}
+.title{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:23px}.label{font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:12px;color:#b58b4d}
+.status{font-size:12px;color:var(--teal)} .view{display:none;padding:14px}.view.active{display:block}
+.card{background:var(--panel);border:1px solid #b58b4d44;border-radius:10px;padding:14px;margin-bottom:10px}
+.hero{display:flex;justify-content:space-between;gap:10px}.big{font-size:34px;font-weight:700}.muted{opacity:.7}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.stat{padding:10px;background:#071012;border-radius:8px;text-align:center}.stat b{display:block;font-size:22px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.action{background:#102124;color:var(--cream);border:1px solid #2eb5c566;padding:11px;border-radius:8px;text-align:left}.action:active{transform:scale(.98)}
+.map{position:relative;height:calc(100dvh - 245px);min-height:540px;margin:0 -14px;overflow:hidden;background:#03090a;border-top:1px solid #b58b4d44;border-bottom:1px solid #b58b4d44;touch-action:pan-x pan-y}
+.hex{position:absolute;width:92px;height:106px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background-size:cover;background-position:center;filter:saturate(.8);transition:.2s;cursor:pointer}
+.hex::after{content:"";position:absolute;inset:0;background:#020607d9;transition:.2s}.hex.seen::after{background:#0004}.hex.current{outline:3px solid var(--teal);outline-offset:-5px;filter:saturate(1.15) brightness(1.1)}
+.hex span{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);font-weight:700;text-shadow:0 2px 4px #000}
+.mapinfo{position:absolute;z-index:5;left:12px;right:12px;bottom:12px;background:#071012dd;backdrop-filter:blur(8px);border:1px solid #b58b4d55;border-radius:8px;padding:9px 11px;pointer-events:none}
+.log{height:155px;overflow:auto;font-size:13px;line-height:1.35}.log div{padding:4px 0;border-bottom:1px solid #ffffff0b}
+.bar{height:8px;background:#071012;border-radius:9px;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:var(--teal)}
+.nav{position:fixed;max-width:415px;left:50%;transform:translateX(-50%);right:0;bottom:0;height:calc(68px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#081214f5;border-top:1px solid #b58b4d55;display:grid;grid-template-columns:repeat(4,1fr);z-index:20}
+.nav button{background:none;border:0;color:#dec99f99}.nav button.active{color:var(--teal);border-top:2px solid var(--teal)}
+.pill{display:inline-block;padding:3px 7px;border-radius:20px;background:#b58b4d22;border:1px solid #b58b4d55;font-size:11px;margin-right:4px}
+input{width:100%;background:#071012;border:1px solid #b58b4d55;color:var(--cream);padding:10px;border-radius:8px;font:inherit}
+
+.dashboard{display:grid;grid-template-columns:1.35fr .65fr;gap:10px}
+.dashboard .card{margin:0}
+#jogar .hero{border-left:3px solid var(--bronze)}
+#jogar .stats{margin-top:6px}
+#explorar{padding-top:10px}
+#explorar>.card:first-child{margin-bottom:8px}
+@media(max-height:760px){.map{min-height:470px}.top{padding-top:12px}.view{padding-top:10px}}
+</style></head>
+<body><main class="app">
+<header class="top"><div><div class="label">Braseiro • Worlds Without Number</div><div class="title">WORLD WITHOUT NUMBER</div></div><div class="status">WWN</div></header>
+
+<section id="jogar" class="view active">
+<div class="card hero"><div><div class="label">Personagem ativo</div><div class="title">PERSONAGEM</div><div class="muted">Nível 1</div></div><div><div class="label">HP</div><div class="big">8/8</div></div></div>
+<div class="card"><div class="label">Recursos</div><div class="stats"><div class="stat"><span>Strain</span><b>0</b><small>/ 12</small></div><div class="stat"><span>Effort</span><b>2</b><small>/ 2</small></div><div class="stat"><span>AC</span><b>14</b></div></div></div>
+<div class="card"><div class="label">Ações rápidas</div><div class="actions">
+<button class="action" onclick="note('Teste de perícia preparado.')">🎲 Teste de perícia</button>
+<button class="action" onclick="note('Ataque preparado. O dano deve vir do Rules Engine.')">⚔ Ataque</button>
+<button class="action" onclick="note('Inventário aberto em modo contextual.')">▣ Inventário</button>
+<button class="action" onclick="showView('explorar')">⌖ Continuar viagem</button>
+</div></div>
+<div class="card"><div class="label">Diário de sessão</div><div id="playerLog" class="log"><div>Sessão pronta.</div><div>Abra o Atlas para continuar a exploração.</div></div></div>
+</section>
+
+<section id="explorar" class="view">
+<div class="card"><div class="label">Atlas • Jornada</div><div class="title">ATLAS</div></div>
+<div class="map" id="map"><div class="mapinfo"><div class="label">LOCAL</div><b id="hexName">Hex atual</b><div class="muted" id="hexText">Toque em um hex adjacente para viajar.</div></div></div>
+<div class="card"><div class="actions"><button class="action" onclick="explore()">◎ Explorar hex</button><button class="action" onclick="camp()">☾ Acampar</button></div></div>
+</section>
+
+<section id="confronto" class="view">
+<div class="card"><div class="label">Confronto</div><div class="title">Estado de combate</div><div class="stats"><div class="stat"><span>Rodada</span><b id="round">1</b></div><div class="stat"><span>Main</span><b id="mainA">●</b></div><div class="stat"><span>Move</span><b id="moveA">●</b></div></div></div>
+<div class="card"><div class="label">Ações</div><div class="actions"><button class="action" onclick="useAction('mainA','Main Action usada')">Main Action</button><button class="action" onclick="useAction('moveA','Move Action usada')">Move Action</button><button class="action" onclick="note('Total Defense selecionada.')">Total Defense</button><button class="action" onclick="nextRound()">Próxima rodada</button></div></div>
+
+</section>
+
+<section id="mestre" class="view">
+<div class="card"><div class="label">Mestre</div><div class="title">Mestre da campanha</div><p class="muted">Consulte o estado da campanha, localização e memória da sessão.</p></div>
+<div class="card"><div class="label">Pergunta ao Mestre</div><input id="gmInput" placeholder="O que há além das ruínas?"><div style="height:8px"></div><button class="action" style="width:100%" onclick="gm()">Enviar contexto</button></div>
+<div class="card"><div class="label">Memória local do protótipo</div><div id="gmLog" class="log"><div>Local atual: Local atual.</div></div></div>
+</section>
+
+<nav class="nav">
+<button class="active" data-v="jogar" onclick="showView('jogar')">JOGAR</button>
+<button data-v="explorar" onclick="showView('explorar')">EXPLORAR</button>
+<button data-v="confronto" onclick="showView('confronto')">CONFRONTO</button>
+<button data-v="mestre" onclick="showView('mestre')">MESTRE</button>
+</nav></main>
+<script>
+const terrain = ["assets/terrain_base_01_lush_grassland.png", "assets/terrain_base_02_dry_grassland.png", "assets/terrain_base_03_cultivated_farmland.png", "assets/terrain_base_04_wild_meadow.png", "assets/terrain_base_05_scrubland.png", "assets/terrain_base_06_deciduous_forest.png", "assets/terrain_base_07_dense_pine_forest.png", "assets/terrain_base_08_humid_jungle.png"];
+const hexes=[
+{x:161,y:34,q:0,r:-2},{x:69,y:87,q:-1,r:-1},{x:161,y:140,q:0,r:-1},{x:253,y:87,q:1,r:-2},
+{x:69,y:193,q:-1,r:0},{x:161,y:246,q:0,r:0,current:true,seen:true},{x:253,y:193,q:1,r:-1},
+{x:69,y:299,q:-1,r:1},{x:161,y:352,q:0,r:1},{x:253,y:299,q:1,r:0}];
+let current=5; const saved=JSON.parse(localStorage.getItem('wwn_slice')||'null');
+if(saved && saved.current!=null){current=saved.current; (saved.seen||[]).forEach(i=>hexes[i].seen=true)}
+function dist(a,b){const dq=a.q-b.q,dr=a.r-b.r;return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2}
+function renderMap(){const m=document.getElementById('map');m.querySelectorAll('.hex').forEach(e=>e.remove());hexes.forEach((h,i)=>{h.current=i===current;if(h.current)h.seen=true;let e=document.createElement('div');e.className='hex '+(h.seen?'seen ':'')+(h.current?'current':'');e.style.left=h.x+'px';e.style.top=h.y+'px';e.style.backgroundImage=`url("${terrain[i%terrain.length]}")`;e.innerHTML='<span>'+(h.seen?(h.current?'⌖':''):'?')+'</span>';e.onclick=()=>travel(i);m.appendChild(e)});save()}
+function travel(i){if(!hexes[i].seen && dist(hexes[current],hexes[i])!==1){setInfo('Distante demais','Escolha um hex adjacente.');return}if(dist(hexes[current],hexes[i])!==1){setInfo('Movimento inválido','A jornada deste slice aceita apenas hex adjacente.');return}current=i;hexes[i].seen=true;setInfo('Novo hex revelado','Fog enter-only: apenas o destino foi revelado.');renderMap()}
+function explore(){hexes.forEach((h,i)=>{if(dist(hexes[current],h)===1 && Math.random()>.55)h.seen=true});setInfo('Exploração concluída','Alguns indícios próximos foram marcados; viajar continua revelando apenas o destino.');renderMap()}
+function camp(){setInfo('Acampamento','Protótipo registrou a noite. Consumo real será resolvido pelo motor WWN.')}
+function setInfo(a,b){document.getElementById('hexName').textContent=a;document.getElementById('hexText').textContent=b}
+function save(){localStorage.setItem('wwn_slice',JSON.stringify({current,seen:hexes.map((h,i)=>h.seen?i:null).filter(x=>x!==null)}))}
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.v===v));if(v==='explorar')renderMap()}
+function note(t){document.getElementById('playerLog').insertAdjacentHTML('afterbegin','<div>'+t+'</div>')}
+function useAction(id,msg){document.getElementById(id).textContent='○';note(msg)}
+function nextRound(){document.getElementById('round').textContent=+document.getElementById('round').textContent+1;document.getElementById('mainA').textContent='●';document.getElementById('moveA').textContent='●'}
+function gm(){let x=document.getElementById('gmInput');if(!x.value)return;document.getElementById('gmLog').insertAdjacentHTML('afterbegin','<div>Contexto solicitado: '+x.value.replace(/[<>]/g,'')+'</div>');x.value=''}
+renderMap();
+</script></body></html>
