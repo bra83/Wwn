@@ -24,53 +24,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inspect firestorage client chunks
+      - name: Discover exact firestorage download endpoint
         shell: bash
         run: |
           set -euo pipefail
-          base='https://firestorage.ai'
-          mkdir -p /tmp/chunks
-          paths=(
-            '/_next/static/chunks/4bd1b696-93bf506b236d6248.js'
-            '/_next/static/chunks/3794-56f19dc9e2f95fcd.js'
-            '/_next/static/chunks/main-app-7107f99dce0bf1eb.js'
-            '/_next/static/chunks/8500-f4d7bfbe7500f274.js'
-            '/_next/static/chunks/8437-d65cc193dc908afa.js'
-            '/_next/static/chunks/5841-1160578ba9bb4f3e.js'
-            '/_next/static/chunks/4899-d89df949f2dbd5af.js'
-            '/_next/static/chunks/app/(files)/ja/f/page-4d19ae0a4ce39d79.js'
-          )
-          i=0
-          for p in "${paths[@]}"; do
-            i=$((i+1))
-            out="/tmp/chunks/$i.js"
-            curl -L --fail --silent --show-error -A 'Mozilla/5.0' "$base$p" -o "$out"
-            printf '%s %s bytes %s\n' "$i" "$(wc -c < "$out")" "$p"
-          done
-          echo '=== ROUTE STUB ==='
-          cat /tmp/chunks/8.js
+          api='https://api.firestorage.ai/dev/file'
+          share='PJmIjMoXk-LZ'
+          curl -L --fail --silent --show-error "$api/shares/$share/files?maxResults=1000" -o /tmp/list.json
+          echo '=== FILE LIST ==='
+          cat /tmp/list.json
           echo
-          echo '=== RELEVANT STRINGS ==='
+          curl -L --fail --silent --show-error 'https://firestorage.ai/_next/static/chunks/4899-d89df949f2dbd5af.js' -o /tmp/fire.js
+          echo '=== DOWNLOADURL CONTEXT ==='
           python3 - <<'PY'
-          import re
           from pathlib import Path
-          for f in sorted(Path('/tmp/chunks').glob('*.js')):
-              s=f.read_text('utf-8',errors='ignore')
-              print('---',f.name,'---')
-              needles=('download','shareid','publicid','/api/','presign','signed','object','folder','password')
-              for needle in needles:
-                  pos=0; n=0
-                  low=s.lower()
-                  while True:
-                      i=low.find(needle,pos)
-                      if i<0: break
-                      a=max(0,i-220); b=min(len(s),i+420)
-                      text=s[a:b].replace('\n',' ')
-                      print(text)
-                      n+=1; pos=i+len(needle)
-                      if n>=12: break
+          s=Path('/tmp/fire.js').read_text('utf-8',errors='ignore')
+          for needle in ('downloadUrl','download-url','/download','downloads'):
+              print('\n###', needle)
+              pos=0
+              for n in range(20):
+                  i=s.find(needle,pos)
+                  if i<0: break
+                  print(s[max(0,i-1200):min(len(s),i+1200)])
+                  pos=i+len(needle)
           PY
-          exit 44
+          exit 45
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
