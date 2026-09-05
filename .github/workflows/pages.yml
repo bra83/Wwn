@@ -24,6 +24,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Stamp Atlas fog cache keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i 's/world-v5.css?v=2/world-v5.css?v=3/g' index.html
+          sed -i "s/fog-v7.css?v=1/fog-v7.css?v=2/g" world-v5.css
+
       - name: Validate WWN app and runtime assets
         shell: bash
         run: |
@@ -34,6 +41,7 @@ jobs:
           node --check app-v6.js
           grep -q 'app-v6.css?v=' index.html
           grep -q 'app-v6.js?v=' index.html
+          grep -q 'world-v5.css?v=3' index.html
           grep -q 'id="inicio"' index.html
           grep -q 'id="personagem"' index.html
           grep -q 'id="explorar"' index.html
@@ -46,9 +54,10 @@ jobs:
           grep -q 'function oracleRoll' app-v6.js
           grep -q 'function combatAttack' app-v6.js
           grep -q 'fog-unknown' app-v6.css
-          grep -q "@import url('fog-v7.css?v=1')" world-v5.css
-          grep -q 'poi-label' fog-v7.css
-          grep -q 'map-weather{display:none!important}' fog-v7.css
+          grep -q "@import url('fog-v7.css?v=2')" world-v5.css
+          grep -q 'opacity:1!important' fog-v7.css
+          grep -q 'white-space:normal!important' fog-v7.css
+          grep -q 'text-overflow:clip!important' fog-v7.css
           grep -q 'symbol id="compass"' assets/ui-icons.svg
           grep -q 'symbol id="swords"' assets/ui-icons.svg
           test -s assets/terrain_features_04_high_mountains.png
@@ -80,20 +89,23 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
+          grep -q 'world-v5.css?v=3' /tmp/live-index.html
           curl -fsSL "${site}world.js" -o /tmp/live-world.js
           curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
           curl -fsSL "${site}app-v6.js" -o /tmp/live-app.js
           curl -fsSL "${site}app-v6.css" -o /tmp/live-app.css
-          curl -fsSL "${site}world-v5.css" -o /tmp/live-v5.css
-          curl -fsSL "${site}fog-v7.css" -o /tmp/live-fog.css
+          curl -fsSL "${site}world-v5.css?v=3" -o /tmp/live-v5.css
+          curl -fsSL "${site}fog-v7.css?v=2" -o /tmp/live-fog.css
           curl -fsSL "${site}assets/ui-icons.svg" -o /tmp/live-icons.svg
           node --check /tmp/live-world.js
           node --check /tmp/live-v5.js
           node --check /tmp/live-app.js
           grep -q 'function oracleRoll' /tmp/live-app.js
           grep -q 'fog-unknown' /tmp/live-app.css
-          grep -q 'fog-v7.css?v=1' /tmp/live-v5.css
-          grep -q 'z-index:30!important' /tmp/live-fog.css
+          grep -q 'fog-v7.css?v=2' /tmp/live-v5.css
+          grep -q 'opacity:1!important' /tmp/live-fog.css
+          grep -q 'white-space:normal!important' /tmp/live-fog.css
+          grep -q 'text-overflow:clip!important' /tmp/live-fog.css
           grep -q 'symbol id="home"' /tmp/live-icons.svg
           for asset in assets/terrain_features_04_high_mountains.png assets/terrain_features_09_freshwater_lake.png assets/poi_inhabited_06_royal_castle.png assets/poi_dangerous_01_overgrown_ruins.png assets/weather_time_07_fog.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
