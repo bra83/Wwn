@@ -24,11 +24,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject Atlas frontier mist V9
+      - name: Inject Atlas organic frontier mist V10
         shell: bash
         run: |
           set -euo pipefail
-          grep -q 'fog-boundary-v8.css' index.html || sed -i 's#</head>#<link rel="stylesheet" href="fog-boundary-v8.css?v=2"></head>#' index.html
+          if grep -q 'fog-boundary-v8.css?v=2' index.html; then
+            sed -i 's/fog-boundary-v8.css?v=2/fog-boundary-v8.css?v=3/g' index.html
+          elif ! grep -q 'fog-boundary-v8.css?v=3' index.html; then
+            sed -i 's#</head>#<link rel="stylesheet" href="fog-boundary-v8.css?v=3"></head>#' index.html
+          fi
           grep -q 'fog-boundary-v8.js' index.html || sed -i 's#</body>#<script src="fog-boundary-v8.js?v=2"></script></body>#' index.html
 
       - name: Validate WWN app and runtime assets
@@ -40,7 +44,7 @@ jobs:
           node --check world-v5.js
           node --check app-v6.js
           node --check fog-boundary-v8.js
-          grep -q 'fog-boundary-v8.css?v=2' index.html
+          grep -q 'fog-boundary-v8.css?v=3' index.html
           grep -q 'fog-boundary-v8.js?v=2' index.html
           grep -q 'id="inicio"' index.html
           grep -q 'id="personagem"' index.html
@@ -51,6 +55,8 @@ jobs:
           grep -q 'function oracleRoll' app-v6.js
           grep -q 'renderFrontierFogV8' fog-boundary-v8.js
           grep -q 'fog_frontier_mist_v9.svg' fog-boundary-v8.css
+          grep -q 'mix-blend-mode:normal' fog-boundary-v8.css
+          grep -q 'radial-gradient' fog-boundary-v8.css
           grep -q 'background:#000!important' fog-boundary-v8.css
           grep -q 'frontier-fog-layer' fog-boundary-v8.css
           grep -q 'width:142px!important' fog-boundary-v8.css
@@ -83,9 +89,9 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
-          grep -q 'fog-boundary-v8.css?v=2' /tmp/live-index.html
+          grep -q 'fog-boundary-v8.css?v=3' /tmp/live-index.html
           curl -fsSL "${site}fog-boundary-v8.js?v=2" -o /tmp/live-fog-v8.js
-          curl -fsSL "${site}fog-boundary-v8.css?v=2" -o /tmp/live-fog-v8.css
+          curl -fsSL "${site}fog-boundary-v8.css?v=3" -o /tmp/live-fog-v8.css
           curl -fsSL "${site}assets/fog_frontier_mist_v9.svg" -o /tmp/live-mist.svg
           curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
           curl -fsSL "${site}app-v6.js" -o /tmp/live-app.js
@@ -93,7 +99,8 @@ jobs:
           node --check /tmp/live-v5.js
           node --check /tmp/live-app.js
           grep -q 'renderFrontierFogV8' /tmp/live-fog-v8.js
-          grep -q 'fog_frontier_mist_v9.svg' /tmp/live-fog-v8.css
+          grep -q 'mix-blend-mode:normal' /tmp/live-fog-v8.css
+          grep -q 'radial-gradient' /tmp/live-fog-v8.css
           grep -q 'frontier-fog-layer' /tmp/live-fog-v8.css
           grep -q 'width:142px!important' /tmp/live-fog-v8.css
           grep -q '<feTurbulence' /tmp/live-mist.svg
