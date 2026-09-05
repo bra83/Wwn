@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WWN névoa v12</title>
+<style>
+body{margin:0;background:#061014;color:#ecd7ab;font-family:Arial,sans-serif}.app{width:415px;min-height:915px;margin:0 auto;background:linear-gradient(#0b171b,#071013)}
+.h{padding:14px 16px;border-bottom:1px solid #6f542e;font-family:Georgia,serif}.h small{display:block;color:#caa96c;letter-spacing:.08em}.h b{font-size:28px}
+.card{margin:12px 16px;padding:12px 14px;border:1px solid #7b6034;border-radius:14px;background:#0a1316}.sub{color:#d9bb7e}
+.map{margin:0 16px;border:1px solid #7b6034;border-radius:16px;overflow:hidden;background:#05090a}.mh{display:flex;justify-content:space-between;padding:10px 12px;color:#d6b57a;border-bottom:1px solid #7b6034;font:14px Georgia,serif}.wrap{position:relative;height:520px;background:radial-gradient(circle at 50% 45%,#162024 0,#0b1316 40%,#05090a 100%)}
+.hex{position:absolute;width:104px;height:120px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);overflow:hidden}.hex .bg,.hex .bd{position:absolute;inset:0}.hex .bd{border:2px solid rgba(255,245,220,.18);clip-path:inherit;box-sizing:border-box}.hex.cur .bd{border-color:#e1bc72;box-shadow:0 0 18px rgba(225,188,114,.5)}
+.t1{background:linear-gradient(135deg,#5e7a46,#364826)}.t2{background:linear-gradient(135deg,#66824d,#486437)}.t3{background:linear-gradient(135deg,#486e87,#21495c)}.t4{background:linear-gradient(135deg,#7f7358,#5a503e)}.t5{background:linear-gradient(135deg,#6c6c67,#3f403d)}
+.hidden{background:#010203}.q{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:28px Georgia,serif;color:#d9b26a;text-shadow:0 0 8px rgba(225,188,114,.2)}
+.lab{position:absolute;z-index:5;padding:4px 9px;border:1px solid #7b6034;border-radius:999px;background:rgba(10,11,13,.92);color:#f2e5c5;font:700 11px Arial,sans-serif;text-transform:uppercase}
+.party{position:absolute;z-index:6;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;border:2px solid #c79d52;background:radial-gradient(circle,#40311e,#0d0b0a);box-shadow:0 0 16px rgba(225,188,114,.35)}
+.fog{position:absolute;z-index:4;pointer-events:none}.fog:before,.fog:after,.fog i{content:"";position:absolute;border-radius:50%;filter:blur(16px)}.fog:before{left:8px;top:26px;width:118px;height:78px;background:radial-gradient(circle at 45% 42%,rgba(162,171,177,.72),rgba(103,111,118,.48) 55%,rgba(0,0,0,0) 82%)}.fog:after{left:44px;top:14px;width:126px;height:86px;background:radial-gradient(circle at 45% 42%,rgba(134,142,147,.62),rgba(83,90,95,.46) 56%,rgba(0,0,0,0) 84%)}.fog i{left:34px;top:56px;width:104px;height:62px;background:radial-gradient(circle at 45% 42%,rgba(160,169,175,.62),rgba(93,99,104,.42) 58%,rgba(0,0,0,0) 84%)}
+</style></head><body><div class="app"><div class="h"><small>WORLDS WITHOUT NUMBER</small><b>EXPLORAÇÃO HEX</b></div><div class="card"><div class="sub">A névoa aparece somente na fronteira entre hexes revelados e hexes ainda não revelados.</div></div><div class="map"><div class="mh"><span>Q 17 · R 22</span><span>Marchas do Crepúsculo</span><span>1 hex = 6 milhas</span></div><div id="wrap" class="wrap"></div></div></div>
+<script>
+const W=104,H=120,SX=104,SY=90,wrap=document.getElementById('wrap');
+const dirs=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]],ang=[0,60,-60,180,120,-120];
+const tiles=[
+{q:0,r:0,rev:1,cur:1,cls:'t1',label:'Vila Agrícola',lx:16,ly:82},
+{q:-1,r:0,rev:1,cls:'t3',label:'Lagos Velados',lx:14,ly:82},
+{q:1,r:0,rev:1,cls:'t1'},
+{q:0,r:-1,rev:1,cls:'t4',label:'Colinas das Brumas',lx:4,ly:-10},
+{q:1,r:-1,rev:1,cls:'t5',label:'Picos Quebrados',lx:16,ly:-10},
+{q:-1,r:1,rev:1,cls:'t2',label:'Estalagem de Encruzilhada',lx:0,ly:84},
+{q:0,r:1,rev:1,cls:'t3',label:'Baixa do Espelho',lx:18,ly:82},
+{q:1,r:1,rev:1,cls:'t1',label:'Ponte de Pedra',lx:24,ly:82},
+{q:0,r:-2,rev:1,cls:'t2',label:'Assentamento Abandonado',lx:-2,ly:82},
+{q:-1,r:-1,rev:1,cls:'t2'}];
+[-3,-2,-1,0,1,2,3].forEach(q=>[-3,-2,-1,0,1,2,3].forEach(r=>{if(Math.abs(q+r)<=3&&!tiles.find(t=>t.q==q&&t.r==r))tiles.push({q,r,rev:0});}));
+const key=t=>t.q+','+t.r, map=new Map(tiles.map(t=>[key(t),t]));
+const pos=(q,r)=>({x:155+SX*(q+r/2),y:160+SY*r});
+function el(tag,cls,par){const e=document.createElement(tag);if(cls)e.className=cls;if(par)par.appendChild(e);return e}
+tiles.forEach(t=>{const p=pos(t.q,t.r),h=el('div','hex'+(t.cur?' cur':''),wrap);h.style.left=p.x+'px';h.style.top=p.y+'px';if(t.rev){el('div','bg '+t.cls,h);el('div','bd',h);if(t.label){const l=el('div','lab',wrap);l.textContent=t.label;l.style.left=(p.x+(t.lx||10))+'px';l.style.top=(p.y+(t.ly||80))+'px';}}else{h.classList.add('hidden');el('div','bd',h);const q=el('div','q',h);q.textContent='?';}});
+const c=tiles.find(t=>t.cur),cp=pos(c.q,c.r),party=el('div','party',wrap);party.innerHTML='👥';party.style.left=(cp.x+29)+'px';party.style.top=(cp.y+37)+'px';
+tiles.filter(t=>t.rev).forEach(t=>dirs.forEach((d,i)=>{const n=map.get((t.q+d[0])+','+(t.r+d[1]));if(!n||!n.rev){const p=pos(t.q,t.r),a=ang[i]*Math.PI/180,cx=p.x+W/2+Math.cos(a)*74,cy=p.y+H/2+Math.sin(a)*60,f=el('div','fog',wrap);f.style.left=(cx-92)+'px';f.style.top=(cy-74)+'px';f.style.width='184px';f.style.height='148px';f.style.transform='rotate('+(-22+((t.q*17+t.r*23+i*13)%44))+'deg)';f.style.opacity=.80;el('i','',f);}}));
+</script></body></html>
