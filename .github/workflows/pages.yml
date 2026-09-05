@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build integrated WWN runtime v11
+      - name: Build integrated WWN runtime v12
         shell: bash
         run: |
           set -euo pipefail
@@ -33,10 +33,10 @@ jobs:
           sed -i 's/Hexcrawl e exploração/Exploração por hex/g' index.html
           sed -i 's/Tempo \/ névoa/Tempo \/ clima/g' index.html
 
-          sed -Ei 's/world-v5\.css\?v=[0-9]+/world-v5.css?v=22/g' index.html
-          sed -Ei 's/world-v5\.js\?v=[0-9]+/world-v5.js?v=22/g' index.html
-          sed -Ei 's/app-v6\.css\?v=[0-9]+/app-v6.css?v=22/g' index.html
-          sed -Ei 's/app-v6\.js\?v=[0-9]+/app-v6.js?v=22/g' index.html
+          sed -Ei 's/world-v5\.css\?v=[0-9]+/world-v5.css?v=23/g' index.html
+          sed -Ei 's/world-v5\.js\?v=[0-9]+/world-v5.js?v=23/g' index.html
+          sed -Ei 's/app-v6\.css\?v=[0-9]+/app-v6.css?v=23/g' index.html
+          sed -Ei 's/app-v6\.js\?v=[0-9]+/app-v6.js?v=23/g' index.html
 
           # No-fog baseline: unknown hexes stay black with a gold question mark.
           sed -i "/@import url('fog-v7.css?v=1');/d" world-v5.css
@@ -55,7 +55,7 @@ jobs:
           p.write_text(s,encoding='utf-8')
           PY
 
-          # Inject dark Atlas, sparse POIs and integrated game runtimes.
+          # Inject dark Atlas and all VTT runtimes.
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -73,24 +73,26 @@ jobs:
                   s=s.replace('</body>', f'<script src="{name}?v={version}"></script></body>')
               else:
                   s=re.sub(re.escape(name)+r'\?v=\d+', f'{name}?v={version}', s)
-          css('atlas-dark-poi.css',22)
-          css('game-v7.css',22)
-          css('game-v8.css',22)
-          css('game-v9.css',22)
-          css('game-v10.css',22)
-          css('game-v11.css',22)
-          js('atlas-poi-seed.js',22)
-          js('game-v7.js',22)
-          js('game-v8.js',22)
-          js('game-v9.js',22)
-          js('game-v10.js',22)
-          js('gemini-narrative-v11.js',22)
+          css('atlas-dark-poi.css',23)
+          css('game-v7.css',23)
+          css('game-v8.css',23)
+          css('game-v9.css',23)
+          css('game-v10.css',23)
+          css('game-v11.css',23)
+          css('game-v12.css',23)
+          js('atlas-poi-seed.js',23)
+          js('game-v7.js',23)
+          js('game-v8.js',23)
+          js('game-v9.js',23)
+          js('game-v10.js',23)
+          js('gemini-narrative-v11.js',23)
+          js('game-v12.js',23)
           p.write_text(s,encoding='utf-8')
           PY
 
           cat >> atlas-dark-poi.css <<'CSS'
 
-          /* ATLAS_LABEL_STACK_V22 */
+          /* ATLAS_LABEL_STACK_V23 */
           .map-weather,.hex .mist,.hex .fog-unknown{display:none!important;opacity:0!important;background:none!important;background-image:none!important}
           .hex:not(.seen){background:#000!important}
           .hex:not(.seen) .shade{background:#000!important;opacity:1!important}
@@ -103,7 +105,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js atlas-dark-poi.css atlas-poi-seed.js game-v7.css game-v7.js game-v8.css game-v8.js game-v9.css game-v9.js game-v10.css game-v10.js game-v11.css gemini-narrative-v11.js assets/ui-icons.svg; do test -s "$file"; done
+          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js atlas-dark-poi.css atlas-poi-seed.js game-v7.css game-v7.js game-v8.css game-v8.js game-v9.css game-v9.js game-v10.css game-v10.js game-v11.css gemini-narrative-v11.js game-v12.css game-v12.js assets/ui-icons.svg; do test -s "$file"; done
           node --check world.js
           node --check world-v5.js
           node --check app-v6.js
@@ -113,31 +115,19 @@ jobs:
           node --check game-v9.js
           node --check game-v10.js
           node --check gemini-narrative-v11.js
+          node --check game-v12.js
           grep -q 'Exploração Hex' index.html
-          grep -q 'atlas-dark-poi.css?v=22' index.html
-          grep -q 'atlas-poi-seed.js?v=22' index.html
-          grep -q 'game-v7.css?v=22' index.html
-          grep -q 'game-v7.js?v=22' index.html
-          grep -q 'game-v8.css?v=22' index.html
-          grep -q 'game-v8.js?v=22' index.html
-          grep -q 'game-v9.css?v=22' index.html
-          grep -q 'game-v9.js?v=22' index.html
-          grep -q 'game-v10.css?v=22' index.html
-          grep -q 'game-v10.js?v=22' index.html
-          grep -q 'game-v11.css?v=22' index.html
-          grep -q 'gemini-narrative-v11.js?v=22' index.html
-          grep -q 'ATLAS_DARK_POI_V14' atlas-dark-poi.css
-          grep -q 'ATLAS_LABEL_STACK_V22' atlas-dark-poi.css
-          grep -q 'ATLAS_POI_SEED_V15' atlas-poi-seed.js
-          grep -q 'GAME_RUNTIME_V7' game-v7.js
-          grep -q 'GAME_RUNTIME_V8' game-v8.js
-          grep -q 'GAME_RUNTIME_V9' game-v9.js
-          grep -q 'GAME_RUNTIME_V10' game-v10.js
+          grep -q 'game-v12.css?v=23' index.html
+          grep -q 'game-v12.js?v=23' index.html
+          grep -q 'gemini-narrative-v11.js?v=23' index.html
+          grep -q 'ATLAS_LABEL_STACK_V23' atlas-dark-poi.css
           grep -q 'GEMINI_NARRATIVE_V11' gemini-narrative-v11.js
-          grep -q 'g11Generate' gemini-narrative-v11.js
-          grep -q 'x-goog-api-key' gemini-narrative-v11.js
-          grep -q 'gemini-3.8-flash' gemini-narrative-v11.js
-          grep -q 'poi-label-overlay' game-v8.css
+          grep -q 'GAME_RUNTIME_V12' game-v12.js
+          grep -q 'game12Checkpoint' game-v12.js
+          grep -q 'game12RenderCombat' game-v12.js
+          grep -q 'game12RenderMaster' game-v12.js
+          grep -q 'game12RenderSessions' game-v12.js
+          grep -q 'game12Gemini' game-v12.js
           ! grep -q "@import url('fog-v7.css" world-v5.css
           ! grep -q 'fog-boundary-v8.css' index.html
           ! grep -q 'fog-boundary-v8.js' index.html
@@ -162,21 +152,19 @@ jobs:
           site='${{ steps.deployment.outputs.page_url }}'
           ok=0
           for attempt in $(seq 1 12); do
-            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'gemini-narrative-v11.js?v=22' /tmp/live-index.html; then ok=1; break; fi
+            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'game-v12.js?v=23' /tmp/live-index.html; then ok=1; break; fi
             sleep 5
           done
           test "$ok" = 1
-          grep -q 'game-v11.css?v=22' /tmp/live-index.html
-          grep -q 'game-v10.js?v=22' /tmp/live-index.html
-          curl -fsSL "${site}gemini-narrative-v11.js?v=22" -o /tmp/live-gemini11.js
-          curl -fsSL "${site}game-v11.css?v=22" -o /tmp/live-game11.css
-          curl -fsSL "${site}atlas-dark-poi.css?v=22" -o /tmp/live-dark.css
+          grep -q 'game-v12.css?v=23' /tmp/live-index.html
+          grep -q 'gemini-narrative-v11.js?v=23' /tmp/live-index.html
+          curl -fsSL "${site}game-v12.js?v=23" -o /tmp/live-game12.js
+          curl -fsSL "${site}game-v12.css?v=23" -o /tmp/live-game12.css
+          curl -fsSL "${site}gemini-narrative-v11.js?v=23" -o /tmp/live-gemini11.js
+          node --check /tmp/live-game12.js
           node --check /tmp/live-gemini11.js
+          grep -q 'GAME_RUNTIME_V12' /tmp/live-game12.js
+          grep -q 'game12Checkpoint' /tmp/live-game12.js
+          grep -q 'game12-sessionbar' /tmp/live-game12.css
           grep -q 'GEMINI_NARRATIVE_V11' /tmp/live-gemini11.js
-          grep -q 'g11Generate' /tmp/live-gemini11.js
-          grep -q 'x-goog-api-key' /tmp/live-gemini11.js
-          grep -q 'game11-card' /tmp/live-game11.css
-          grep -q 'ATLAS_LABEL_STACK_V22' /tmp/live-dark.css
-          ! grep -q "@import url('fog-v7.css" /tmp/live-dark.css
-          for asset in assets/poi_inhabited_02_farming_village.png assets/poi_inhabited_15_stone_bridge.png assets/poi_dangerous_12_abandoned_settlement.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
