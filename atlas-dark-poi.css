@@ -1,0 +1,21 @@
+/* ATLAS_DARK_POI_V14 — sombreado sem névoa + POIs legíveis */
+.map-weather,.hex .mist,.hex .fog-unknown{display:none!important;opacity:0!important;background:none!important;background-image:none!important}
+.map{background:radial-gradient(circle at 50% 42%,#0c1517 0,#071013 48%,#020607 100%)!important;box-shadow:inset 0 0 70px rgba(0,0,0,.72)}
+.hex:not(.seen){background:#000!important}
+.hex:not(.seen) .base,.hex:not(.seen) .feature,.hex:not(.seen) .poi{display:none!important;opacity:0!important}
+.hex:not(.seen) .shade{background:#000!important;opacity:1!important}
+.hex:not(.seen) .mark{display:block!important;color:#d9b26a!important;font-size:22px!important;font-weight:700!important;text-shadow:0 0 8px rgba(217,178,106,.28),0 2px 5px #000!important}
+.hex.seen .base{filter:saturate(.68) brightness(.72) contrast(1.13) sepia(.10)!important}
+.hex.seen .feature{filter:saturate(.74) brightness(.70) contrast(1.14) sepia(.08)!important}
+.hex.seen .shade{background:rgba(0,5,7,.18)!important}
+.hex.visited .shade{background:rgba(0,4,6,.11)!important}
+.hex.current .base{filter:saturate(.76) brightness(.78) contrast(1.14) sepia(.08)!important}
+.hex.current .feature{filter:saturate(.82) brightness(.77) contrast(1.14) sepia(.07)!important}
+.hex.current .shade{background:rgba(0,3,5,.08)!important}
+.hex.poi-known .poi{opacity:.96!important;filter:saturate(.72) brightness(.74) contrast(1.16) sepia(.08) drop-shadow(0 2px 4px #000)!important}
+.hex.poi-known .shade{background:rgba(0,4,6,.07)!important}
+.hex .poi-label{z-index:9!important;left:5px!important;right:5px!important;top:auto!important;bottom:10px!important;padding:3px 4px!important;border:1px solid rgba(193,151,88,.72)!important;border-radius:4px!important;background:linear-gradient(180deg,rgba(5,9,10,.97),rgba(8,13,14,.94))!important;color:#f2dfb8!important;font-size:8.4px!important;line-height:1.04!important;font-weight:700!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-shadow:0 1px 2px #000!important}
+.poi-sigil{position:absolute;z-index:10;left:50%;top:10px;transform:translateX(-50%);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:rgba(6,10,11,.92);border:1px solid rgba(202,159,91,.78);color:#ddb978;font-size:12px;line-height:1;box-shadow:0 2px 9px #000b,0 0 10px rgba(211,170,91,.12)}
+.poi-sigil.danger{color:#d28a6a;border-color:rgba(183,99,69,.82)}
+.hex.current .poi-sigil{top:28px}
+.hex.current .poi-label{bottom:7px!important}
