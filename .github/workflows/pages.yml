@@ -24,39 +24,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Lock clean Atlas without fog
+      - name: Build dark Atlas with visible POIs
         shell: bash
         run: |
           set -euo pipefail
 
-          # Portuguese labels and cache bust for the definitive no-fog Atlas.
           sed -i 's/Hex-Crawl/Exploração Hex/g' index.html
           sed -i 's/Hexcrawl e exploração/Exploração por hex/g' index.html
-          sed -i 's/Tempo \/ névoa/Tempo/g' index.html
-          sed -i 's/world-v5.css?v=2/world-v5.css?v=13/g' index.html
+          sed -i 's/Tempo \/ névoa/Tempo \/ clima/g' index.html
 
-          # Remove the old fog stylesheet import that was still bringing the
-          # cloud texture back even after the frontier experiment was disabled.
+          # Force cache refresh for Atlas resources.
+          sed -Ei 's/world-v5\.css\?v=[0-9]+/world-v5.css?v=14/g' index.html
+          sed -Ei 's/world-v5\.js\?v=[0-9]+/world-v5.js?v=14/g' index.html
+
+          # Permanently remove old fog import and fog runtime layer.
           sed -i "/@import url('fog-v7.css?v=1');/d" world-v5.css
-
-          cat >> world-v5.css <<'CSS'
-
-          /* NO_FOG_BASELINE_V13 — permanent visual baseline */
-          .map::before{content:none!important;display:none!important;background:none!important}
-          .map-weather,.hex .mist,.hex .fog-unknown{display:none!important;background:none!important;background-image:none!important;opacity:0!important}
-          .hex:not(.seen) .base,.hex:not(.seen) .feature,.hex:not(.seen) .poi{display:none!important;opacity:0!important;background-image:none!important}
-          .hex:not(.seen){background:#000!important}
-          .hex:not(.seen) .shade{background:#000!important;opacity:1!important}
-          .hex:not(.seen) .mark{display:block!important;color:#d9b26a!important;font-size:22px!important;font-weight:700!important;text-shadow:0 0 8px rgba(217,178,106,.30),0 2px 5px #000!important}
-          .hex.seen .shade{background:rgba(0,0,0,.08)!important}
-          .hex.visited .shade,.hex.current .shade{background:rgba(0,0,0,.02)!important}
-          .hex.seen .base,.hex.seen .feature{opacity:1!important}
-          .hex.poi-known .poi{opacity:1!important}
-          .hex .poi-label{left:6px!important;right:6px!important;top:61px!important;bottom:auto!important;padding:3px 4px!important;border:1px solid rgba(196,154,91,.62)!important;border-radius:3px!important;background:linear-gradient(180deg,rgba(5,10,11,.97),rgba(9,15,16,.92))!important;color:#f1dfbc!important;font-size:8.2px!important;line-height:1.02!important;font-weight:700!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;max-height:none!important}
-          CSS
-
-          # Remove the fog layer from the user-facing layer menu and translate
-          # remaining Atlas terminology without touching the game engine.
           python3 - <<'PY'
           from pathlib import Path
           p=Path('world-v5.js')
@@ -68,43 +50,45 @@ jobs:
           s=s.replace("'Sem feature'", "'Sem relevo'")
           s=s.replace("<span>Feature</span>", "<span>Relevo</span>")
           s=s.replace("Terreno, feature ou local...", "Terreno, relevo ou local...")
-          s=s.replace("ou outras features", "ou outros relevos")
           p.write_text(s,encoding='utf-8')
           PY
 
-          # No experimental fog bundle may be linked by the production page.
-          ! grep -q 'fog-boundary-v8.css' index.html
-          ! grep -q 'fog-boundary-v8.js' index.html
+          # Inject the new dark palette and the visible POI pass after the main app resources.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          if 'atlas-dark-poi.css' not in s:
+              s=s.replace('</head>', '<link rel="stylesheet" href="atlas-dark-poi.css?v=14"></head>')
+          if 'atlas-poi-seed.js' not in s:
+              s=s.replace('</body>', '<script src="atlas-poi-seed.js?v=14"></script></body>')
+          p.write_text(s,encoding='utf-8')
+          PY
 
-      - name: Validate WWN app and no-fog baseline
+      - name: Validate Atlas production build
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js assets/ui-icons.svg; do test -s "$file"; done
+          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js atlas-dark-poi.css atlas-poi-seed.js assets/ui-icons.svg; do test -s "$file"; done
           node --check world.js
           node --check world-v5.js
           node --check app-v6.js
-          grep -q 'id="inicio"' index.html
-          grep -q 'id="personagem"' index.html
-          grep -q 'id="explorar"' index.html
-          grep -q 'id="confronto"' index.html
-          grep -q 'id="mestre"' index.html
+          node --check atlas-poi-seed.js
           grep -q 'Exploração Hex' index.html
-          grep -q 'world-v5.css?v=13' index.html
-          grep -q 'NO_FOG_BASELINE_V13' world-v5.css
-          grep -q '.hex:not(.seen){background:#000!important}' world-v5.css
-          grep -q '.map-weather,.hex .mist,.hex .fog-unknown' world-v5.css
+          grep -q 'atlas-dark-poi.css?v=14' index.html
+          grep -q 'atlas-poi-seed.js?v=14' index.html
+          grep -q 'ATLAS_DARK_POI_V14' atlas-dark-poi.css
+          grep -q 'ATLAS_POI_SEED_V14' atlas-poi-seed.js
+          grep -q "farmVillage" atlas-poi-seed.js
+          grep -q "abandoned" atlas-poi-seed.js
           ! grep -q "@import url('fog-v7.css" world-v5.css
           ! grep -q 'fog-boundary-v8.css' index.html
           ! grep -q 'fog-boundary-v8.js' index.html
-          ! grep -q 'Fog contextual de terreno e clima' world-v5.js
-          grep -q 'function wwnTravelSelected' world-v5.js
-          grep -q 'function oracleRoll' app-v6.js
-          grep -q 'symbol id="compass"' assets/ui-icons.svg
-          test -s assets/terrain_features_04_high_mountains.png
-          test -s assets/terrain_features_09_freshwater_lake.png
+          test -s assets/poi_inhabited_02_farming_village.png
           test -s assets/poi_inhabited_16_crossroads_inn.png
           test -s assets/poi_inhabited_15_stone_bridge.png
+          test -s assets/poi_dangerous_12_abandoned_settlement.png
+          test -s assets/poi_inhabited_11_mine.png
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -123,21 +107,15 @@ jobs:
           site='${{ steps.deployment.outputs.page_url }}'
           ok=0
           for attempt in $(seq 1 12); do
-            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'Exploração Hex' /tmp/live-index.html; then ok=1; break; fi
+            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'atlas-dark-poi.css?v=14' /tmp/live-index.html; then ok=1; break; fi
             sleep 5
           done
           test "$ok" = 1
-          grep -q 'world-v5.css?v=13' /tmp/live-index.html
-          ! grep -q 'fog-boundary-v8.css' /tmp/live-index.html
-          ! grep -q 'fog-boundary-v8.js' /tmp/live-index.html
-          curl -fsSL "${site}world-v5.css?v=13" -o /tmp/live-v5.css
-          curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
-          curl -fsSL "${site}app-v6.js" -o /tmp/live-app.js
-          node --check /tmp/live-v5.js
-          node --check /tmp/live-app.js
-          grep -q 'NO_FOG_BASELINE_V13' /tmp/live-v5.css
-          grep -q '.hex:not(.seen){background:#000!important}' /tmp/live-v5.css
-          ! grep -q "@import url('fog-v7.css" /tmp/live-v5.css
-          ! grep -q 'Fog contextual de terreno e clima' /tmp/live-v5.js
-          for asset in assets/terrain_features_04_high_mountains.png assets/terrain_features_09_freshwater_lake.png assets/poi_inhabited_16_crossroads_inn.png assets/poi_inhabited_15_stone_bridge.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
+          grep -q 'atlas-poi-seed.js?v=14' /tmp/live-index.html
+          curl -fsSL "${site}atlas-dark-poi.css?v=14" -o /tmp/live-dark.css
+          curl -fsSL "${site}atlas-poi-seed.js?v=14" -o /tmp/live-poi.js
+          node --check /tmp/live-poi.js
+          grep -q 'ATLAS_DARK_POI_V14' /tmp/live-dark.css
+          grep -q 'ATLAS_POI_SEED_V14' /tmp/live-poi.js
+          for asset in assets/poi_inhabited_02_farming_village.png assets/poi_inhabited_16_crossroads_inn.png assets/poi_inhabited_15_stone_bridge.png assets/poi_dangerous_12_abandoned_settlement.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
