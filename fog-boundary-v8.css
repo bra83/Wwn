@@ -1,4 +1,4 @@
-/* Atlas V9 — névoa real apenas na fronteira da área conhecida */
+/* Atlas V10 — bruma orgânica somente na fronteira da área conhecida */
 .map::before,.map-weather{display:none!important}
 #map .fog-unknown{display:none!important}
 #map .hex .mist{display:none!important}
@@ -14,7 +14,7 @@
 #map .hex:not(.seen) .shade{display:block!important;background:#000!important;opacity:1!important;z-index:6!important}
 #map .hex:not(.seen) .mark{display:none!important}
 
-/* Hexes revelados ficam completamente limpos. */
+/* Revelados permanecem limpos; a bruma fica por baixo deles. */
 #map .hex.seen{z-index:14!important}
 #map .hex.seen .shade{background:transparent!important}
 #map .hex.visited .shade,#map .hex.current .shade{background:transparent!important}
@@ -22,19 +22,60 @@
 #map .hex.selected{z-index:18!important}
 #map .hex.current{z-index:20!important}
 
-/* Banco contínuo de névoa: fica entre o desconhecido e os hexes revelados. */
-.frontier-fog-layer{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:visible;filter:blur(1.2px)}
-.frontier-fog-wisp{position:absolute;width:230px;height:170px;transform:translate(-50%,-50%) rotate(var(--fog-angle,0deg));transform-origin:center;background-image:url('assets/fog_frontier_mist_v9.svg');background-position:center;background-size:100% 100%;background-repeat:no-repeat;opacity:.88;filter:blur(5px) saturate(.55) brightness(1.12);mix-blend-mode:screen;will-change:transform,opacity}
-.frontier-fog-wisp::after{content:"";position:absolute;inset:18% 5%;background-image:url('assets/fog_frontier_mist_v9.svg');background-size:cover;background-position:62% 48%;opacity:.58;filter:blur(7px);transform:scale(1.25) rotate(7deg)}
-.frontier-fog-wisp:nth-child(3n+2){width:270px;height:188px;opacity:.76;filter:blur(7px) saturate(.48) brightness(1.18)}
-.frontier-fog-wisp:nth-child(3n){width:205px;height:154px;opacity:.94;filter:blur(4px) saturate(.52) brightness(1.08)}
+/*
+   Banco de bruma de fronteira.
+   Não usa mais blend SCREEN/brilho branco. A textura procedural existente entra
+   apenas como detalhe de turbulência, escurecida, enquanto as massas principais
+   são lóbulos cinza-carvão irregulares.
+*/
+.frontier-fog-layer{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:visible;isolation:isolate}
+.frontier-fog-wisp{
+  position:absolute;
+  width:205px;height:142px;
+  transform:translate(-50%,-50%) rotate(var(--fog-angle,0deg)) scale(var(--fog-scale,1));
+  transform-origin:center;
+  opacity:.72;
+  mix-blend-mode:normal;
+  filter:blur(7px) saturate(.22) contrast(1.16);
+  background-image:
+    radial-gradient(ellipse at 17% 48%,rgba(105,113,117,.48) 0 10%,rgba(77,84,88,.32) 18%,rgba(44,49,52,.12) 37%,transparent 58%),
+    radial-gradient(ellipse at 39% 35%,rgba(126,133,136,.42) 0 11%,rgba(82,89,92,.28) 20%,rgba(46,51,54,.10) 42%,transparent 61%),
+    radial-gradient(ellipse at 62% 51%,rgba(112,119,123,.44) 0 12%,rgba(75,82,86,.25) 22%,rgba(43,48,51,.09) 43%,transparent 64%),
+    radial-gradient(ellipse at 82% 43%,rgba(91,99,104,.36) 0 9%,rgba(63,69,73,.20) 21%,transparent 52%),
+    radial-gradient(ellipse at 53% 72%,rgba(79,86,90,.30) 0 8%,rgba(52,58,61,.14) 25%,transparent 55%),
+    url('assets/fog_frontier_mist_v9.svg');
+  background-size:72% 78%,68% 72%,76% 82%,64% 70%,70% 66%,138% 138%;
+  background-position:4% 50%,32% 22%,63% 54%,96% 40%,51% 94%,50% 50%;
+  background-repeat:no-repeat;
+}
+.frontier-fog-wisp::before,
+.frontier-fog-wisp::after{content:"";position:absolute;pointer-events:none;border-radius:50%;filter:blur(9px)}
+.frontier-fog-wisp::before{
+  left:9%;top:21%;width:77%;height:42%;
+  transform:rotate(-8deg);
+  background:
+    radial-gradient(ellipse at 22% 54%,rgba(151,157,160,.20) 0 9%,rgba(85,91,95,.15) 18%,transparent 46%),
+    radial-gradient(ellipse at 53% 42%,rgba(132,139,142,.18) 0 10%,rgba(80,86,90,.13) 22%,transparent 50%),
+    radial-gradient(ellipse at 81% 60%,rgba(117,124,128,.17) 0 8%,rgba(70,76,80,.11) 21%,transparent 48%);
+}
+.frontier-fog-wisp::after{
+  left:17%;top:48%;width:69%;height:31%;
+  transform:rotate(11deg) scaleX(1.15);
+  background:
+    radial-gradient(ellipse at 27% 49%,rgba(113,121,125,.16) 0 8%,rgba(66,72,76,.10) 22%,transparent 50%),
+    radial-gradient(ellipse at 69% 44%,rgba(145,151,154,.15) 0 7%,rgba(76,82,85,.10) 20%,transparent 47%);
+}
+.frontier-fog-wisp:nth-child(4n+1){--fog-scale:1.03;opacity:.70;filter:blur(8px) saturate(.18) contrast(1.20)}
+.frontier-fog-wisp:nth-child(4n+2){width:238px;height:154px;--fog-scale:.94;opacity:.62;filter:blur(9px) saturate(.16) contrast(1.22)}
+.frontier-fog-wisp:nth-child(4n+3){width:178px;height:132px;--fog-scale:1.08;opacity:.78;filter:blur(6px) saturate(.24) contrast(1.14)}
+.frontier-fog-wisp:nth-child(4n){width:218px;height:146px;--fog-scale:.98;opacity:.66;filter:blur(8px) saturate(.20) contrast(1.18)}
 .map.hide-mist .frontier-fog-layer,.fog-disabled .frontier-fog-layer{display:none!important}
 
-/* Interrogações acima da névoa. */
+/* Interrogações ficam limpas acima da bruma. */
 .unseen-question-layer{position:absolute;inset:0;z-index:10;pointer-events:none;overflow:visible}
-.unseen-question{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;display:grid;place-items:center;color:#d7ad62;font-family:"Barlow Condensed",sans-serif;font-size:25px;font-weight:700;line-height:1;text-shadow:0 1px 3px #000,0 0 9px rgba(213,170,91,.34)}
+.unseen-question{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;display:grid;place-items:center;color:#d7ad62;font-family:"Barlow Condensed",sans-serif;font-size:25px;font-weight:700;line-height:1;text-shadow:0 1px 3px #000,0 0 8px rgba(213,170,91,.28)}
 
-/* Nomes completos, acima de qualquer névoa. */
+/* Nomes completos, acima da bruma, com quebra de linha real. */
 #map .hex.seen .poi-label{z-index:50!important;left:50%!important;right:auto!important;top:66px!important;bottom:auto!important;width:142px!important;max-width:142px!important;min-height:18px;padding:3px 7px!important;transform:translateX(-50%);border:1px solid rgba(196,154,91,.72);border-radius:3px;background:linear-gradient(180deg,rgba(5,10,11,.99),rgba(9,15,16,.96));color:#f2dfba!important;font-family:"Barlow Condensed",sans-serif!important;font-size:9px!important;line-height:1.05!important;font-weight:700;letter-spacing:.025em!important;text-align:center!important;text-transform:uppercase!important;text-shadow:0 1px 2px #000,0 0 5px #000;box-shadow:0 2px 8px rgba(0,0,0,.72);pointer-events:none;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:break-word!important;word-break:normal!important;hyphens:none!important}
 #map .hex.current .poi-label,#map .hex.selected .poi-label{background:linear-gradient(180deg,rgba(36,27,14,.99),rgba(8,13,14,.97));border-color:rgba(224,189,123,.88)}
 
