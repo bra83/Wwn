@@ -24,19 +24,59 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare clean Atlas production view
+      - name: Lock clean Atlas without fog
         shell: bash
         run: |
           set -euo pipefail
-          # Fog experiment is intentionally disabled. Keep the strongest existing
-          # terrain/feature/POI implementation and let unknown hexes remain black
-          # with the gold question mark rendered by the world layer.
+
+          # Portuguese labels and cache bust for the definitive no-fog Atlas.
           sed -i 's/Hex-Crawl/Exploração Hex/g' index.html
           sed -i 's/Hexcrawl e exploração/Exploração por hex/g' index.html
+          sed -i 's/Tempo \/ névoa/Tempo/g' index.html
+          sed -i 's/world-v5.css?v=2/world-v5.css?v=13/g' index.html
+
+          # Remove the old fog stylesheet import that was still bringing the
+          # cloud texture back even after the frontier experiment was disabled.
+          sed -i "/@import url('fog-v7.css?v=1');/d" world-v5.css
+
+          cat >> world-v5.css <<'CSS'
+
+          /* NO_FOG_BASELINE_V13 — permanent visual baseline */
+          .map::before{content:none!important;display:none!important;background:none!important}
+          .map-weather,.hex .mist,.hex .fog-unknown{display:none!important;background:none!important;background-image:none!important;opacity:0!important}
+          .hex:not(.seen) .base,.hex:not(.seen) .feature,.hex:not(.seen) .poi{display:none!important;opacity:0!important;background-image:none!important}
+          .hex:not(.seen){background:#000!important}
+          .hex:not(.seen) .shade{background:#000!important;opacity:1!important}
+          .hex:not(.seen) .mark{display:block!important;color:#d9b26a!important;font-size:22px!important;font-weight:700!important;text-shadow:0 0 8px rgba(217,178,106,.30),0 2px 5px #000!important}
+          .hex.seen .shade{background:rgba(0,0,0,.08)!important}
+          .hex.visited .shade,.hex.current .shade{background:rgba(0,0,0,.02)!important}
+          .hex.seen .base,.hex.seen .feature{opacity:1!important}
+          .hex.poi-known .poi{opacity:1!important}
+          .hex .poi-label{left:6px!important;right:6px!important;top:61px!important;bottom:auto!important;padding:3px 4px!important;border:1px solid rgba(196,154,91,.62)!important;border-radius:3px!important;background:linear-gradient(180deg,rgba(5,10,11,.97),rgba(9,15,16,.92))!important;color:#f1dfbc!important;font-size:8.2px!important;line-height:1.02!important;font-weight:700!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;max-height:none!important}
+          CSS
+
+          # Remove the fog layer from the user-facing layer menu and translate
+          # remaining Atlas terminology without touching the game engine.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('world-v5.js')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace("let wwnLayers=Object.assign({features:true,pois:true,mist:true,labels:true}", "let wwnLayers=Object.assign({features:true,pois:true,mist:false,labels:true}")
+          s=s.replace("map.classList.toggle('hide-mist',!wwnLayers.mist);", "map.classList.add('hide-mist');")
+          s=s.replace("<div class=\"layer mist\"></div>", "")
+          s=s.replace("['mist','Neblina','Fog contextual de terreno e clima'],", "")
+          s=s.replace("'Sem feature'", "'Sem relevo'")
+          s=s.replace("<span>Feature</span>", "<span>Relevo</span>")
+          s=s.replace("Terreno, feature ou local...", "Terreno, relevo ou local...")
+          s=s.replace("ou outras features", "ou outros relevos")
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          # No experimental fog bundle may be linked by the production page.
           ! grep -q 'fog-boundary-v8.css' index.html
           ! grep -q 'fog-boundary-v8.js' index.html
 
-      - name: Validate WWN app and runtime assets
+      - name: Validate WWN app and no-fog baseline
         shell: bash
         run: |
           set -euo pipefail
@@ -50,8 +90,14 @@ jobs:
           grep -q 'id="confronto"' index.html
           grep -q 'id="mestre"' index.html
           grep -q 'Exploração Hex' index.html
+          grep -q 'world-v5.css?v=13' index.html
+          grep -q 'NO_FOG_BASELINE_V13' world-v5.css
+          grep -q '.hex:not(.seen){background:#000!important}' world-v5.css
+          grep -q '.map-weather,.hex .mist,.hex .fog-unknown' world-v5.css
+          ! grep -q "@import url('fog-v7.css" world-v5.css
           ! grep -q 'fog-boundary-v8.css' index.html
           ! grep -q 'fog-boundary-v8.js' index.html
+          ! grep -q 'Fog contextual de terreno e clima' world-v5.js
           grep -q 'function wwnTravelSelected' world-v5.js
           grep -q 'function oracleRoll' app-v6.js
           grep -q 'symbol id="compass"' assets/ui-icons.svg
@@ -81,11 +127,17 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
+          grep -q 'world-v5.css?v=13' /tmp/live-index.html
           ! grep -q 'fog-boundary-v8.css' /tmp/live-index.html
           ! grep -q 'fog-boundary-v8.js' /tmp/live-index.html
+          curl -fsSL "${site}world-v5.css?v=13" -o /tmp/live-v5.css
           curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
           curl -fsSL "${site}app-v6.js" -o /tmp/live-app.js
           node --check /tmp/live-v5.js
           node --check /tmp/live-app.js
+          grep -q 'NO_FOG_BASELINE_V13' /tmp/live-v5.css
+          grep -q '.hex:not(.seen){background:#000!important}' /tmp/live-v5.css
+          ! grep -q "@import url('fog-v7.css" /tmp/live-v5.css
+          ! grep -q 'Fog contextual de terreno e clima' /tmp/live-v5.js
           for asset in assets/terrain_features_04_high_mountains.png assets/terrain_features_09_freshwater_lake.png assets/poi_inhabited_16_crossroads_inn.png assets/poi_inhabited_15_stone_bridge.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
