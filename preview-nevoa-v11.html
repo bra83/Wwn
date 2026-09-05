@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Braseiro WWN — Hex-Crawl</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap');
+:root{--bg:#05090a;--panel:#081113;--line:#8e6d3c;--gold:#d9bb7e;--gold2:#b68d54;--text:#efdfbf;--muted:#c7ae84;--shadow:#000;}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Barlow Condensed",sans-serif}button{font:inherit}
+.app{max-width:415px;min-height:100dvh;margin:0 auto;background:radial-gradient(circle at 50% 0,#10191b 0,#060b0d 55%);padding-bottom:calc(82px + env(safe-area-inset-bottom))}
+.top{padding:14px 16px 10px;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(142,109,60,.35)}
+.brand{display:flex;gap:12px}.seal{width:50px;height:50px;border-radius:50%;position:relative;border:2px solid rgba(182,141,84,.75);box-shadow:0 0 0 1px rgba(255,255,255,.05) inset;background:radial-gradient(circle at 50% 50%,rgba(217,187,126,.16),rgba(4,7,8,.92) 68%)}
+.seal:before,.seal:after,.seal i,.seal b{content:"";position:absolute;left:50%;top:50%;background:var(--gold);transform:translate(-50%,-50%)}
+.seal:before{width:2px;height:32px}.seal:after{height:2px;width:32px}.seal i{width:2px;height:28px;transform:translate(-50%,-50%) rotate(45deg)}.seal b{height:2px;width:28px;transform:translate(-50%,-50%) rotate(45deg)}
+.kicker{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.page-title{font-family:"Cinzel",serif;font-size:22px;line-height:1.05}
+.sub{font-size:12px;color:#dbc8a6}
+.tools{display:flex;gap:10px}.tool{width:60px;text-align:center;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold)}.tool .ico{width:28px;height:28px;border-radius:7px;border:1px solid rgba(182,141,84,.55);display:grid;place-items:center;margin:0 auto 4px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0))}
+.card{margin:12px 16px;background:linear-gradient(180deg,rgba(10,18,20,.96),rgba(7,12,14,.96));border:1px solid rgba(142,109,60,.5);border-radius:16px;box-shadow:0 18px 36px rgba(0,0,0,.28),0 0 0 1px rgba(255,255,255,.03) inset}
+.headcard{padding:14px 16px}.page-title.sm{font-size:19px}.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.pill{padding:5px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(182,141,84,.45);background:rgba(182,141,84,.08);color:#e1cb9f}
+.weather{display:grid;grid-template-columns:56px 1fr;gap:12px;padding:14px}.thumb{width:56px;height:56px;border-radius:10px;border:1px solid rgba(182,141,84,.5);background:#0c1214 center/cover no-repeat}
+.map-shell{margin:0 16px;border:1px solid rgba(142,109,60,.55);border-radius:18px;overflow:hidden;background:#05090a;box-shadow:0 22px 44px rgba(0,0,0,.34)}
+.map-head{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(142,109,60,.5);font-family:"Cinzel",serif;font-size:13px;color:#d4ba8e;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,0))}
+.map-wrap{position:relative;height:520px;overflow:hidden;background:radial-gradient(circle at 50% 45%,#131e20 0,#0d1416 28%,#060b0d 62%,#040708 100%)}
+#mapCanvas,#veilLayer,#labelLayer,#uiLayer{position:absolute;inset:0}
+.hex{position:absolute;width:104px;height:120px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);overflow:hidden}
+.hex .base,.hex .feature{position:absolute;inset:0;background-position:center;background-repeat:no-repeat;clip-path:inherit}.hex .base{background-size:240% auto;transform:scale(1.02)}.hex .feature{background-size:cover}
+.hex .grid{position:absolute;inset:0;clip-path:inherit;border:2px solid rgba(255,250,239,.18);z-index:5}
+.hex.current .grid{border-color:rgba(223,190,124,.86);box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 0 14px rgba(223,190,124,.5),0 0 30px rgba(223,190,124,.16)}
+.hex.hidden{background:#010203}.hex.hidden .grid{border-color:rgba(255,255,255,.08)}.hex.hidden .q{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;color:#d7b16e;font-family:"Cinzel",serif;font-size:28px;text-shadow:0 0 8px rgba(223,190,124,.24),0 2px 6px #000}
+.poi-label,.tile-label{position:absolute;z-index:40;pointer-events:none;max-width:122px;padding:3px 8px 4px;border-radius:999px;background:rgba(10,11,13,.92);border:1px solid rgba(142,109,60,.8);box-shadow:0 3px 12px rgba(0,0,0,.35);font-weight:700;letter-spacing:.03em;text-transform:uppercase;line-height:1.03;text-align:center;color:#f0e2c1;white-space:normal;text-wrap:balance;font-size:11px}
+.poi-label.wide{max-width:130px}.tile-label{background:rgba(12,14,16,.82);color:#dbc69d}
+.group{position:absolute;z-index:45;width:46px;height:46px;border-radius:50%;border:2px solid rgba(194,153,84,.78);background:radial-gradient(circle at 50% 45%,rgba(44,31,19,.98),rgba(10,8,8,.96));display:grid;place-items:center;box-shadow:0 0 18px rgba(223,190,124,.26)}.group span{font-size:18px;color:#d7b57a}
+.veil{position:absolute;pointer-events:none;z-index:25}
+.veil .cloud{position:absolute;border-radius:50%;background:radial-gradient(circle at 42% 40%,rgba(136,144,149,.72) 0,rgba(116,124,129,.66) 20%,rgba(91,98,103,.52) 40%,rgba(56,61,66,.34) 62%,rgba(18,21,24,0) 82%);filter:blur(16px)}
+.veil .cloud.dark{background:radial-gradient(circle at 45% 42%,rgba(124,131,136,.62) 0,rgba(90,96,101,.55) 24%,rgba(60,66,71,.46) 50%,rgba(25,28,31,.30) 70%,rgba(10,12,14,0) 84%)}
+.veil .smoke{position:absolute;inset:0;background:
+ radial-gradient(ellipse at 18% 52%, rgba(100,107,111,.14) 0 12%, rgba(100,107,111,0) 26%),
+ radial-gradient(ellipse at 46% 36%, rgba(128,135,140,.12) 0 10%, rgba(128,135,140,0) 22%),
+ radial-gradient(ellipse at 70% 62%, rgba(98,104,110,.12) 0 11%, rgba(98,104,110,0) 24%),
+ radial-gradient(ellipse at 84% 40%, rgba(142,148,153,.10) 0 9%, rgba(142,148,153,0) 20%);
+ filter:blur(6px);opacity:.88}
+.sidebar{position:absolute;left:12px;top:190px;z-index:50;display:grid;gap:8px}.sidebtn{width:58px;min-height:58px;border-radius:14px;border:1px solid rgba(142,109,60,.68);background:linear-gradient(180deg,rgba(18,25,28,.96),rgba(8,13,15,.98));display:grid;place-items:center;color:#d7b57a;font-size:12px;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.3)}.sidebtn b{font-size:26px;line-height:1}.sidebtn span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.fly{position:absolute;right:12px;bottom:18px;z-index:50;text-align:center}.fly .disc{width:74px;height:74px;border-radius:50%;border:2px solid rgba(142,109,60,.75);display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,rgba(25,30,32,.95),rgba(8,12,14,.98));box-shadow:0 8px 18px rgba(0,0,0,.35)}.fly .disc:before{content:"➤";font-size:32px;color:#d7b57a;transform:translateX(3px)}.fly .tag{margin-top:8px;padding:7px 12px;border-radius:999px;background:rgba(9,11,13,.88);border:1px solid rgba(142,109,60,.62);font-family:"Cinzel",serif;color:#dfc499;font-size:13px}
+.detail{padding:14px}.detail-head{display:grid;grid-template-columns:86px 1fr;gap:12px}.thumbhex{width:84px;height:97px;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);border:2px solid rgba(142,109,60,.78);background:center/cover no-repeat;overflow:hidden}.detail h2{margin:0;font-family:"Cinzel",serif;font-size:20px;line-height:1.05}.detail .coords{font-family:"Cinzel",serif;color:#d7bc91;font-size:13px;margin:4px 0 6px}.detail .desc{font-size:14px;color:#e7d6b8;line-height:1.35}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(142,109,60,.35);border-bottom:1px solid rgba(142,109,60,.35);margin:12px 0}.grid4>div{padding:10px 8px;min-height:84px}.grid4>div+div{border-left:1px solid rgba(142,109,60,.28)}.k{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#d0b78b}.v{font-family:"Cinzel",serif;font-size:18px;margin-top:6px}.subv{font-size:14px;color:#e6cf8a;margin-top:2px}.note{font-size:14px;line-height:1.35;color:#dec7a0}.btnline{display:flex;gap:10px;margin-top:12px}.btn{flex:1;padding:12px 14px;border-radius:12px;border:1px solid rgba(142,109,60,.68);background:linear-gradient(180deg,#573817,#3a250f);color:#f1dfbc;font-family:"Cinzel",serif;font-size:16px}.btn.secondary{background:linear-gradient(180deg,#132024,#0d171a);border-color:rgba(42,147,165,.72)}
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;max-width:415px;width:100%;padding-bottom:env(safe-area-inset-bottom);display:grid;grid-template-columns:repeat(5,1fr);background:linear-gradient(180deg,rgba(4,6,7,.96),rgba(7,10,11,.98));border-top:1px solid rgba(142,109,60,.45);z-index:90}.nav button{background:none;border:0;color:#c3ad87;padding:10px 4px 12px;font-size:11px;letter-spacing:.04em;text-transform:uppercase}.nav button .ico{display:block;font-size:24px;line-height:1.1;margin-bottom:2px;color:#b8945d}.nav button.active{color:#f0d9a6}.nav button.active .ico{color:#e0bf79}
+</style>
+</head>
+<body>
+<main class="app">
+<header class="top">
+<div class="brand"><div class="seal"><i></i><b></b></div><div><div class="kicker">Worlds Without Number</div><div class="page-title">HEX-CRAWL</div><div class="sub">Exploração · Sessão 8</div></div></div>
+<div class="tools"><div class="tool"><div class="ico">⌕</div>Buscar</div><div class="tool"><div class="ico">▱</div>Camadas</div><div class="tool"><div class="ico">☰</div>Notas</div></div>
+</header>
+<section class="card headcard"><div class="kicker">Atlas · Jornada</div><div class="page-title sm">Marchas do Crepúsculo</div><div class="meta"><span class="pill">Dia 1 · 09:00</span><span class="pill">Q 17 · R 22</span><span class="pill">1 hex = 6 milhas</span></div></section>
+<section class="card weather"><div class="thumb" style="background-image:url('assets/weather_time_14_day.png')"></div><div><div class="kicker">Tempo / Névoa</div><div class="page-title sm" style="font-size:18px">Dia claro</div><div class="sub">Nuvens de névoa contornam a área revelada, com cobertura mais ampla nas bordas.</div></div></section>
+<section class="map-shell"><div class="map-head"><span>Q 17 · R 22</span><span>Marchas do Crepúsculo</span><span>1 hex = 6 milhas</span></div><div class="map-wrap"><div id="mapCanvas"></div><div id="veilLayer"></div><div id="labelLayer"></div><div id="uiLayer"></div><div class="sidebar"><div class="sidebtn"><div><b>+</b><span>Zoom+</span></div></div><div class="sidebtn"><div><b>−</b><span>Zoom−</span></div></div><div class="sidebtn"><div><b>⌖</b><span>Centrar</span></div></div><div class="sidebtn"><div><b>⇢</b><span>Viajar</span></div></div></div><div class="fly"><div class="disc"></div><div class="tag">Viajar até</div></div></div></section>
+<section class="card detail"><div class="detail-head"><div id="detailThumb" class="thumbhex"></div><div><h2>Colinas das Brumas</h2><div class="coords">Q 17 · R 22 · Colinas / Terras cultivadas</div><div class="desc">Terras cultivadas e colinas irregulares cercam a vila. Trilhas antigas seguem entre campos, lagos e encostas rochosas.</div></div></div><div class="grid4"><div><div class="k">Viagem</div><div class="v">~3h</div><div class="subv">Terreno fácil</div></div><div><div class="k">Perigo</div><div class="v">Baixo</div><div class="subv">1 em 6</div></div><div><div class="k">Exploração</div><div class="v">2 em 6</div><div class="subv">Chance</div></div><div><div class="k">Recursos</div><div class="v">Moderado</div><div class="subv">Suprimentos</div></div></div><div class="note"><b>Notas do Mestre:</b> Boas pastagens, água doce próxima e sinais de ocupação antiga. As ruínas e a ponte podem atrair encontros, rumores e perigos.</div><div class="btnline"><button class="btn">Viajar para este hex</button><button class="btn secondary">Anotação</button></div></section>
+<nav class="nav"><button><span class="ico">⌂</span>Início</button><button class="active"><span class="ico">⬡</span>Explorar</button><button><span class="ico">⌘</span>Sessões</button><button><span class="ico">🔖</span>Favoritos</button><button><span class="ico">⚙</span>Configurações</button></nav>
+</main>
+<script>
+const HEX_W=104, HEX_H=120, STEP_X=104, STEP_Y=90;
+const DIRS=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const BASE={farmland:'assets/terrain_base_03_cultivated_farmland.png',lush:'assets/terrain_base_01_lush_grassland.png',meadow:'assets/terrain_base_04_wild_meadow.png',highland:'assets/terrain_base_16_rocky_highland.png',deciduous:'assets/terrain_base_06_deciduous_forest.png'};
+const FEATURE={mountains:'assets/terrain_features_04_high_mountains.png',lake:'assets/terrain_features_09_freshwater_lake.png'};
+const POI={village:'Vila Agrícola',inn:'Estalagem de Encruzilhada',bridge:'Ponte de Pedra',ruins:'Assentamento Abandonado'};
+const tiles=[
+{q:0,r:0,revealed:true,visited:true,current:true,base:'farmland',name:'Vila Agrícola',poi:'village'},
+{q:-1,r:0,revealed:true,base:'lush',feature:'lake',name:'Lagos Velados'},
+{q:1,r:0,revealed:true,base:'farmland',name:'Campos do Leste'},
+{q:0,r:-1,revealed:true,base:'highland',feature:'mountains',name:'Colinas das Brumas'},
+{q:1,r:-1,revealed:true,base:'highland',feature:'mountains',name:'Picos Quebrados'},
+{q:-1,r:1,revealed:true,base:'farmland',poi:'inn',name:'Estalagem de Encruzilhada'},
+{q:0,r:1,revealed:true,base:'farmland',feature:'lake',name:'Baixa do Espelho'},
+{q:1,r:1,revealed:true,base:'farmland',poi:'bridge',name:'Ponte de Pedra'},
+{q:0,r:-2,revealed:true,base:'deciduous',poi:'ruins',name:'Assentamento Abandonado'},
+{q:-1,r:-1,revealed:true,base:'meadow',name:'Prado Antigo'},
+{q:2,r:-1,revealed:false},{q:2,r:0,revealed:false},{q:2,r:1,revealed:false},{q:1,r:2,revealed:false},{q:0,r:2,revealed:false},{q:-1,r:2,revealed:false},{q:-2,r:2,revealed:false},{q:-2,r:1,revealed:false},{q:-2,r:0,revealed:false},{q:-2,r:-1,revealed:false},{q:-1,r:-2,revealed:false},{q:1,r:-2,revealed:false},{q:2,r:-2,revealed:false},{q:-2,r:3,revealed:false},{q:-1,r:3,revealed:false},{q:0,r:3,revealed:false},{q:1,r:3,revealed:false},{q:2,r:2,revealed:false},{q:3,r:1,revealed:false},{q:3,r:0,revealed:false},{q:3,r:-1,revealed:false},{q:3,r:-2,revealed:false},{q:2,r:-3,revealed:false},{q:1,r:-3,revealed:false},{q:0,r:-3,revealed:false},{q:-1,r:-3,revealed:false},{q:-2,r:-2,revealed:false},{q:-3,r:-1,revealed:false},{q:-3,r:0,revealed:false},{q:-3,r:1,revealed:false},{q:-3,r:2,revealed:false}
+];
+const tileMap=new Map(tiles.map(t=>[`${t.q},${t.r}`,t]));
+const pos=(q,r)=>({x:165+STEP_X*(q+r/2),y:170+STEP_Y*r});
+const neighbor=(t,d)=>tileMap.get(`${t.q+d[0]},${t.r+d[1]}`);
+const mk=(tag,cls,p)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(p)p.appendChild(e);return e};
+function render(){
+ const map=document.getElementById('mapCanvas'), veil=document.getElementById('veilLayer'), lab=document.getElementById('labelLayer'), ui=document.getElementById('uiLayer');
+ map.innerHTML=''; veil.innerHTML=''; lab.innerHTML=''; ui.innerHTML='';
+ const current=tiles.find(t=>t.current);
+ tiles.forEach(t=>{const p=pos(t.q,t.r); const h=mk('div','hex'+(t.current?' current':'')+(t.revealed?'':' hidden'),map); h.style.left=p.x+'px'; h.style.top=p.y+'px'; if(t.revealed){const b=mk('div','base',h); b.style.backgroundImage=`url('${BASE[t.base]||BASE.farmland}')`; if(t.feature){const f=mk('div','feature',h); f.style.backgroundImage=`url('${FEATURE[t.feature]}')`;} mk('div','grid',h);} else {mk('div','grid',h); const q=mk('div','q',h); q.textContent='?';}});
+ const cp=pos(current.q,current.r); const g=mk('div','group',ui); g.style.left=(cp.x+29)+'px'; g.style.top=(cp.y+37)+'px'; g.innerHTML='<span>👥</span>';
+ tiles.filter(t=>t.revealed).forEach(t=>{const p=pos(t.q,t.r); if(t.poi){const x=mk('div','poi-label'+((POI[t.poi]||'').length>18?' wide':''),lab); x.textContent=POI[t.poi]; x.style.left=(p.x-4)+'px'; x.style.top=(p.y+80)+'px';} else if(t.name && (t.feature || t.base==='highland' || t.base==='deciduous')){const x=mk('div','tile-label',lab); x.textContent=t.name; x.style.left=(p.x+4)+'px'; x.style.top=(p.y-10)+'px';}});
+ const frontier=[]; tiles.filter(t=>t.revealed).forEach(t=>DIRS.forEach((d,i)=>{const n=neighbor(t,d); if(!(n&&n.revealed)){frontier.push({t,i});}}));
+ const angles=[0,60,-60,180,120,-120];
+ frontier.forEach((f,idx)=>{const p=pos(f.t.q,f.t.r); const a=angles[f.i]*Math.PI/180; const cx=p.x+HEX_W/2+Math.cos(a)*74; const cy=p.y+HEX_H/2+Math.sin(a)*60; const wrap=mk('div','veil',veil); wrap.style.left=(cx-92)+'px'; wrap.style.top=(cy-74)+'px'; wrap.style.width='184px'; wrap.style.height='148px'; const smoke=mk('div','smoke',wrap); const c1=mk('div','cloud',wrap), c2=mk('div','cloud dark',wrap), c3=mk('div','cloud',wrap);
+ c1.style.left='8px'; c1.style.top='26px'; c1.style.width='118px'; c1.style.height='78px';
+ c2.style.left='46px'; c2.style.top='16px'; c2.style.width='126px'; c2.style.height='86px';
+ c3.style.left='34px'; c3.style.top='56px'; c3.style.width='104px'; c3.style.height='62px';
+ wrap.style.transform=`rotate(${(-22 + (idx*17)%44)}deg)`;
+ wrap.style.opacity=(0.72 + ((idx*13)%18)/100).toFixed(2);
+ });
+ [[-34,86,146,292],[305,92,138,300],[-20,362,170,154],[270,360,178,148],[76,6,250,116]].forEach((cfg,idx)=>{const w=mk('div','veil',veil); w.style.left=cfg[0]+'px'; w.style.top=cfg[1]+'px'; w.style.width=cfg[2]+'px'; w.style.height=cfg[3]+'px'; w.style.opacity=(idx===4?0.58:0.62); const s=mk('div','smoke',w); s.style.opacity='.75'; const a=mk('div','cloud dark',w); a.style.left='12px'; a.style.top='8px'; a.style.width=(cfg[2]-28)+'px'; a.style.height=Math.round(cfg[3]*.46)+'px'; const b=mk('div','cloud',w); b.style.left='28px'; b.style.top=Math.round(cfg[3]*.28)+'px'; b.style.width=(cfg[2]-42)+'px'; b.style.height=Math.round(cfg[3]*.40)+'px'; const c=mk('div','cloud dark',w); c.style.left='4px'; c.style.top=Math.round(cfg[3]*.55)+'px'; c.style.width=(cfg[2]-12)+'px'; c.style.height=Math.round(cfg[3]*.30)+'px';});
+ document.getElementById('detailThumb').style.backgroundImage=`linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.2)), url('${BASE[current.base]}')`;
+}
+render();
+</script>
+</body>
+</html>
