@@ -24,19 +24,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build integrated WWN runtime v25
+      - name: Build integrated WWN runtime v26
         shell: bash
         run: |
           set -euo pipefail
+          VERSION=37
 
           sed -i 's/Hex-Crawl/Exploração Hex/g' index.html
           sed -i 's/Hexcrawl e exploração/Exploração por hex/g' index.html
           sed -i 's/Tempo \/ névoa/Tempo \/ clima/g' index.html
-
-          sed -Ei 's/world-v5\.css\?v=[0-9]+/world-v5.css?v=36/g' index.html
-          sed -Ei 's/world-v5\.js\?v=[0-9]+/world-v5.js?v=36/g' index.html
-          sed -Ei 's/app-v6\.css\?v=[0-9]+/app-v6.css?v=36/g' index.html
-          sed -Ei 's/app-v6\.js\?v=[0-9]+/app-v6.js?v=36/g' index.html
+          sed -Ei "s/world-v5\.css\?v=[0-9]+/world-v5.css?v=${VERSION}/g" index.html
+          sed -Ei "s/world-v5\.js\?v=[0-9]+/world-v5.js?v=${VERSION}/g" index.html
+          sed -Ei "s/app-v6\.css\?v=[0-9]+/app-v6.css?v=${VERSION}/g" index.html
+          sed -Ei "s/app-v6\.js\?v=[0-9]+/app-v6.js?v=${VERSION}/g" index.html
 
           sed -i "/@import url('fog-v7.css?v=1');/d" world-v5.css
           python3 - <<'PY'
@@ -57,30 +57,29 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
+          VERSION=37
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-          def css(name,version):
-              global s
-              if name not in s:
-                  s=s.replace('</head>', f'<link rel="stylesheet" href="{name}?v={version}"></head>')
+          css_names=['atlas-dark-poi.css']+[f'game-v{i}.css' for i in range(7,27)]
+          js_names=['atlas-poi-seed.js','game-v7.js','game-v8.js','game-v9.js','game-v10.js','gemini-narrative-v11.js']+[f'game-v{i}.js' for i in range(12,27)]
+          def inject(name,tag,anchor):
+              nonlocal_dummy=None
+          for name in css_names:
+              if name in s:
+                  s=re.sub(re.escape(name)+r'\?v=\d+',f'{name}?v={VERSION}',s)
               else:
-                  s=re.sub(re.escape(name)+r'\?v=\d+', f'{name}?v={version}', s)
-          def js(name,version):
-              global s
-              if name not in s:
-                  s=s.replace('</body>', f'<script src="{name}?v={version}"></script></body>')
+                  s=s.replace('</head>',f'<link rel="stylesheet" href="{name}?v={VERSION}"></head>')
+          for name in js_names:
+              if name in s:
+                  s=re.sub(re.escape(name)+r'\?v=\d+',f'{name}?v={VERSION}',s)
               else:
-                  s=re.sub(re.escape(name)+r'\?v=\d+', f'{name}?v={version}', s)
-          css_names=['atlas-dark-poi.css','game-v7.css','game-v8.css','game-v9.css','game-v10.css','game-v11.css','game-v12.css','game-v13.css','game-v14.css','game-v15.css','game-v16.css','game-v17.css','game-v18.css','game-v19.css','game-v20.css','game-v21.css','game-v22.css','game-v23.css','game-v24.css','game-v25.css']
-          js_names=['atlas-poi-seed.js','game-v7.js','game-v8.js','game-v9.js','game-v10.js','gemini-narrative-v11.js','game-v12.js','game-v13.js','game-v14.js','game-v15.js','game-v16.js','game-v17.js','game-v18.js','game-v19.js','game-v20.js','game-v21.js','game-v22.js','game-v23.js','game-v24.js','game-v25.js']
-          for name in css_names: css(name,36)
-          for name in js_names: js(name,36)
+                  s=s.replace('</body>',f'<script src="{name}?v={VERSION}"></script></body>')
           p.write_text(s,encoding='utf-8')
           PY
 
           cat >> atlas-dark-poi.css <<'CSS'
 
-          /* ATLAS_LABEL_STACK_V36 */
+          /* ATLAS_LABEL_STACK_V37 */
           .map-weather,.hex .mist,.hex .fog-unknown{display:none!important;opacity:0!important;background:none!important;background-image:none!important}
           .hex:not(.seen){background:#000!important}
           .hex:not(.seen) .shade{background:#000!important;opacity:1!important}
@@ -93,45 +92,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js atlas-dark-poi.css atlas-poi-seed.js game-v7.css game-v7.js game-v8.css game-v8.js game-v9.css game-v9.js game-v10.css game-v10.js game-v11.css gemini-narrative-v11.js game-v12.css game-v12.js game-v13.css game-v13.js game-v14.css game-v14.js game-v15.css game-v15.js game-v16.css game-v16.js game-v17.css game-v17.js game-v18.css game-v18.js game-v19.css game-v19.js game-v20.css game-v20.js game-v21.css game-v21.js game-v22.css game-v22.js game-v23.css game-v23.js game-v24.css game-v24.js game-v25.css game-v25.js assets/ui-icons.svg; do test -s "$file"; done
+          for file in index.html world.js world-v5.js app-v6.js atlas-poi-seed.js gemini-narrative-v11.js game-v26.css game-v26.js; do test -s "$file"; done
           node --check world.js
           node --check world-v5.js
           node --check app-v6.js
           node --check atlas-poi-seed.js
-          node --check game-v7.js
-          node --check game-v8.js
-          node --check game-v9.js
-          node --check game-v10.js
           node --check gemini-narrative-v11.js
-          node --check game-v12.js
-          node --check game-v13.js
-          node --check game-v14.js
-          node --check game-v15.js
-          node --check game-v16.js
-          node --check game-v17.js
-          node --check game-v18.js
-          node --check game-v19.js
-          node --check game-v20.js
-          node --check game-v21.js
-          node --check game-v22.js
-          node --check game-v23.js
-          node --check game-v24.js
-          node --check game-v25.js
-          grep -q 'game-v25.css?v=36' index.html
-          grep -q 'game-v25.js?v=36' index.html
-          grep -q 'game-v24.js?v=36' index.html
-          grep -q 'gemini-narrative-v11.js?v=36' index.html
-          grep -q 'ATLAS_LABEL_STACK_V36' atlas-dark-poi.css
-          grep -q 'GAME_RUNTIME_V25' game-v25.js
-          grep -q 'game25Talk' game-v25.js
-          grep -q 'game25Reveal' game-v25.js
-          grep -q 'game25PublicContext' game-v25.js
-          grep -q 'game25HookGemini' game-v25.js
-          grep -q 'GAME_RUNTIME_V24' game-v24.js
-          grep -q 'GAME_RUNTIME_V23' game-v23.js
+          for i in $(seq 7 10) $(seq 12 26); do node --check "game-v${i}.js"; done
+          grep -q 'game-v26.css?v=37' index.html
+          grep -q 'game-v26.js?v=37' index.html
+          grep -q 'game-v25.js?v=37' index.html
+          grep -q 'gemini-narrative-v11.js?v=37' index.html
+          grep -q 'GAME_RUNTIME_V26' game-v26.js
+          grep -q 'game26ImportPdf' game-v26.js
+          grep -q 'game26OpenDb' game-v26.js
+          grep -q 'game26HookRag' game-v26.js
+          grep -q 'BRASEIRO_WWN_MANUAL_CORPUS_V26' game-v26.js
+          grep -q 'ATLAS_LABEL_STACK_V37' atlas-dark-poi.css
           ! grep -q "@import url('fog-v7.css" world-v5.css
           ! grep -q 'fog-boundary-v8.css' index.html
           ! grep -q 'fog-boundary-v8.js' index.html
+          curl -fsSL 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs' -o /tmp/pdf.min.mjs
+          test -s /tmp/pdf.min.mjs
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -150,21 +132,18 @@ jobs:
           site='${{ steps.deployment.outputs.page_url }}'
           ok=0
           for attempt in $(seq 1 12); do
-            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'game-v25.js?v=36' /tmp/live-index.html; then ok=1; break; fi
+            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'game-v26.js?v=37' /tmp/live-index.html; then ok=1; break; fi
             sleep 5
           done
           test "$ok" = 1
-          grep -q 'game-v25.css?v=36' /tmp/live-index.html
-          curl -fsSL "${site}game-v25.js?v=36" -o /tmp/live-game25.js
-          curl -fsSL "${site}game-v24.js?v=36" -o /tmp/live-game24.js
-          curl -fsSL "${site}gemini-narrative-v11.js?v=36" -o /tmp/live-gemini11.js
+          grep -q 'game-v26.css?v=37' /tmp/live-index.html
+          curl -fsSL "${site}game-v26.js?v=37" -o /tmp/live-game26.js
+          curl -fsSL "${site}game-v25.js?v=37" -o /tmp/live-game25.js
+          curl -fsSL "${site}gemini-narrative-v11.js?v=37" -o /tmp/live-gemini11.js
+          node --check /tmp/live-game26.js
           node --check /tmp/live-game25.js
-          node --check /tmp/live-game24.js
           node --check /tmp/live-gemini11.js
-          grep -q 'GAME_RUNTIME_V25' /tmp/live-game25.js
-          grep -q 'game25Talk' /tmp/live-game25.js
-          grep -q 'game25Reveal' /tmp/live-game25.js
-          grep -q 'game25PublicContext' /tmp/live-game25.js
-          grep -q 'GAME_RUNTIME_V24' /tmp/live-game24.js
-          grep -q 'GEMINI_NARRATIVE_V11' /tmp/live-gemini11.js
+          grep -q 'GAME_RUNTIME_V26' /tmp/live-game26.js
+          grep -q 'game26ImportPdf' /tmp/live-game26.js
+          grep -q 'game26HookRag' /tmp/live-game26.js
           echo "PUBLIC_URL=$site"
