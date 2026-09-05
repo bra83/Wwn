@@ -1,9 +1,9 @@
-/* Atlas V8 — fog de fronteira: desconhecido preto, área conhecida limpa */
+/* Atlas V9 — névoa real apenas na fronteira da área conhecida */
 .map::before,.map-weather{display:none!important}
 #map .fog-unknown{display:none!important}
 #map .hex .mist{display:none!important}
 
-/* O desconhecido não revela absolutamente nenhum asset. */
+/* Desconhecido: preto absoluto + interrogação dourada. */
 #map .hex:not(.seen){z-index:2!important;background:#000!important}
 #map .hex:not(.seen) .base,
 #map .hex:not(.seen) .feature,
@@ -14,27 +14,28 @@
 #map .hex:not(.seen) .shade{display:block!important;background:#000!important;opacity:1!important;z-index:6!important}
 #map .hex:not(.seen) .mark{display:none!important}
 
-/* Revelados ficam totalmente limpos. A névoa vive fora deles. */
+/* Hexes revelados ficam completamente limpos. */
 #map .hex.seen{z-index:14!important}
-#map .hex.seen .shade{background:rgba(0,0,0,.025)!important}
+#map .hex.seen .shade{background:transparent!important}
 #map .hex.visited .shade,#map .hex.current .shade{background:transparent!important}
 #map .hex.poi-known{z-index:16!important}
 #map .hex.selected{z-index:18!important}
 #map .hex.current{z-index:20!important}
 
-/* Camada contínua de bruma desenhada somente na fronteira entre conhecido e desconhecido. */
-.frontier-fog-layer{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:visible}
-.frontier-fog-wisp{position:absolute;width:150px;height:118px;transform:translate(-50%,-50%) rotate(var(--fog-angle,0deg));transform-origin:center;background-image:url('assets/weather_time_07_fog.png');background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.58;filter:saturate(.12) brightness(.72) contrast(1.14);mix-blend-mode:screen;-webkit-mask-image:radial-gradient(ellipse at center,#000 0 28%,rgba(0,0,0,.86) 45%,rgba(0,0,0,.42) 68%,transparent 92%);mask-image:radial-gradient(ellipse at center,#000 0 28%,rgba(0,0,0,.86) 45%,rgba(0,0,0,.42) 68%,transparent 92%)}
-.frontier-fog-wisp:nth-child(3n+2){width:170px;height:128px;opacity:.50;filter:saturate(.10) brightness(.77) contrast(1.08)}
-.frontier-fog-wisp:nth-child(3n){width:136px;height:110px;opacity:.64;background-position:62% 45%}
+/* Banco contínuo de névoa: fica entre o desconhecido e os hexes revelados. */
+.frontier-fog-layer{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:visible;filter:blur(1.2px)}
+.frontier-fog-wisp{position:absolute;width:230px;height:170px;transform:translate(-50%,-50%) rotate(var(--fog-angle,0deg));transform-origin:center;background-image:url('assets/fog_frontier_mist_v9.svg');background-position:center;background-size:100% 100%;background-repeat:no-repeat;opacity:.88;filter:blur(5px) saturate(.55) brightness(1.12);mix-blend-mode:screen;will-change:transform,opacity}
+.frontier-fog-wisp::after{content:"";position:absolute;inset:18% 5%;background-image:url('assets/fog_frontier_mist_v9.svg');background-size:cover;background-position:62% 48%;opacity:.58;filter:blur(7px);transform:scale(1.25) rotate(7deg)}
+.frontier-fog-wisp:nth-child(3n+2){width:270px;height:188px;opacity:.76;filter:blur(7px) saturate(.48) brightness(1.18)}
+.frontier-fog-wisp:nth-child(3n){width:205px;height:154px;opacity:.94;filter:blur(4px) saturate(.52) brightness(1.08)}
 .map.hide-mist .frontier-fog-layer,.fog-disabled .frontier-fog-layer{display:none!important}
 
-/* Interrogações são uma camada própria, sempre acima da bruma. */
+/* Interrogações acima da névoa. */
 .unseen-question-layer{position:absolute;inset:0;z-index:10;pointer-events:none;overflow:visible}
-.unseen-question{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;display:grid;place-items:center;color:#d7ad62;font-family:"Barlow Condensed",sans-serif;font-size:25px;font-weight:700;line-height:1;text-shadow:0 1px 3px #000,0 0 8px rgba(213,170,91,.30)}
+.unseen-question{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;display:grid;place-items:center;color:#d7ad62;font-family:"Barlow Condensed",sans-serif;font-size:25px;font-weight:700;line-height:1;text-shadow:0 1px 3px #000,0 0 9px rgba(213,170,91,.34)}
 
-/* Nomes completos: mais largos que o hex e com quebra em múltiplas linhas. */
-#map .hex.seen .poi-label{z-index:50!important;left:50%!important;right:auto!important;top:68px!important;bottom:auto!important;width:128px!important;max-width:128px!important;min-height:18px;padding:3px 6px!important;transform:translateX(-50%);border:1px solid rgba(196,154,91,.68);border-radius:3px;background:linear-gradient(180deg,rgba(5,10,11,.98),rgba(9,15,16,.94));color:#f2dfba!important;font-family:"Barlow Condensed",sans-serif!important;font-size:9px!important;line-height:1.04!important;font-weight:700;letter-spacing:.025em!important;text-align:center!important;text-transform:uppercase!important;text-shadow:0 1px 2px #000,0 0 5px #000;box-shadow:0 2px 8px rgba(0,0,0,.72);pointer-events:none;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:break-word!important;word-break:normal!important;hyphens:none!important}
-#map .hex.current .poi-label,#map .hex.selected .poi-label{background:linear-gradient(180deg,rgba(36,27,14,.99),rgba(8,13,14,.96));border-color:rgba(224,189,123,.86)}
+/* Nomes completos, acima de qualquer névoa. */
+#map .hex.seen .poi-label{z-index:50!important;left:50%!important;right:auto!important;top:66px!important;bottom:auto!important;width:142px!important;max-width:142px!important;min-height:18px;padding:3px 7px!important;transform:translateX(-50%);border:1px solid rgba(196,154,91,.72);border-radius:3px;background:linear-gradient(180deg,rgba(5,10,11,.99),rgba(9,15,16,.96));color:#f2dfba!important;font-family:"Barlow Condensed",sans-serif!important;font-size:9px!important;line-height:1.05!important;font-weight:700;letter-spacing:.025em!important;text-align:center!important;text-transform:uppercase!important;text-shadow:0 1px 2px #000,0 0 5px #000;box-shadow:0 2px 8px rgba(0,0,0,.72);pointer-events:none;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:break-word!important;word-break:normal!important;hyphens:none!important}
+#map .hex.current .poi-label,#map .hex.selected .poi-label{background:linear-gradient(180deg,rgba(36,27,14,.99),rgba(8,13,14,.97));border-color:rgba(224,189,123,.88)}
 
-@media(max-width:360px){#map .hex.seen .poi-label{width:116px!important;max-width:116px!important;font-size:8.3px!important}}
+@media(max-width:360px){#map .hex.seen .poi-label{width:126px!important;max-width:126px!important;font-size:8.3px!important}}
