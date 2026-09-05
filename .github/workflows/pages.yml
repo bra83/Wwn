@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build dark Atlas with visible POIs
+      - name: Build dark Atlas with sparse POIs
         shell: bash
         run: |
           set -euo pipefail
@@ -53,7 +53,7 @@ jobs:
           p.write_text(s,encoding='utf-8')
           PY
 
-          # Inject the new dark palette and the visible POI pass after the main app resources.
+          # Inject dark palette and sparse POI seed after the main app resources.
           python3 - <<'PY'
           from pathlib import Path
           p=Path('index.html')
@@ -61,7 +61,10 @@ jobs:
           if 'atlas-dark-poi.css' not in s:
               s=s.replace('</head>', '<link rel="stylesheet" href="atlas-dark-poi.css?v=14"></head>')
           if 'atlas-poi-seed.js' not in s:
-              s=s.replace('</body>', '<script src="atlas-poi-seed.js?v=14"></script></body>')
+              s=s.replace('</body>', '<script src="atlas-poi-seed.js?v=15"></script></body>')
+          else:
+              import re
+              s=re.sub(r'atlas-poi-seed\.js\?v=\d+', 'atlas-poi-seed.js?v=15', s)
           p.write_text(s,encoding='utf-8')
           PY
 
@@ -76,19 +79,18 @@ jobs:
           node --check atlas-poi-seed.js
           grep -q 'Exploração Hex' index.html
           grep -q 'atlas-dark-poi.css?v=14' index.html
-          grep -q 'atlas-poi-seed.js?v=14' index.html
+          grep -q 'atlas-poi-seed.js?v=15' index.html
           grep -q 'ATLAS_DARK_POI_V14' atlas-dark-poi.css
-          grep -q 'ATLAS_POI_SEED_V14' atlas-poi-seed.js
+          grep -q 'ATLAS_POI_SEED_V15' atlas-poi-seed.js
           grep -q "farmVillage" atlas-poi-seed.js
+          grep -q "bridge" atlas-poi-seed.js
           grep -q "abandoned" atlas-poi-seed.js
           ! grep -q "@import url('fog-v7.css" world-v5.css
           ! grep -q 'fog-boundary-v8.css' index.html
           ! grep -q 'fog-boundary-v8.js' index.html
           test -s assets/poi_inhabited_02_farming_village.png
-          test -s assets/poi_inhabited_16_crossroads_inn.png
           test -s assets/poi_inhabited_15_stone_bridge.png
           test -s assets/poi_dangerous_12_abandoned_settlement.png
-          test -s assets/poi_inhabited_11_mine.png
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -111,11 +113,11 @@ jobs:
             sleep 5
           done
           test "$ok" = 1
-          grep -q 'atlas-poi-seed.js?v=14' /tmp/live-index.html
+          grep -q 'atlas-poi-seed.js?v=15' /tmp/live-index.html
           curl -fsSL "${site}atlas-dark-poi.css?v=14" -o /tmp/live-dark.css
-          curl -fsSL "${site}atlas-poi-seed.js?v=14" -o /tmp/live-poi.js
+          curl -fsSL "${site}atlas-poi-seed.js?v=15" -o /tmp/live-poi.js
           node --check /tmp/live-poi.js
           grep -q 'ATLAS_DARK_POI_V14' /tmp/live-dark.css
-          grep -q 'ATLAS_POI_SEED_V14' /tmp/live-poi.js
-          for asset in assets/poi_inhabited_02_farming_village.png assets/poi_inhabited_16_crossroads_inn.png assets/poi_inhabited_15_stone_bridge.png assets/poi_dangerous_12_abandoned_settlement.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
+          grep -q 'ATLAS_POI_SEED_V15' /tmp/live-poi.js
+          for asset in assets/poi_inhabited_02_farming_village.png assets/poi_inhabited_15_stone_bridge.png assets/poi_dangerous_12_abandoned_settlement.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
