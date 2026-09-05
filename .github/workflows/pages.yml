@@ -24,49 +24,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Stamp Atlas fog cache keys
+      - name: Inject Atlas frontier fog V8
         shell: bash
         run: |
           set -euo pipefail
-          sed -i 's/world-v5.css?v=2/world-v5.css?v=3/g' index.html
-          sed -i "s/fog-v7.css?v=1/fog-v7.css?v=2/g" world-v5.css
+          grep -q 'fog-boundary-v8.css' index.html || sed -i 's#</head>#<link rel="stylesheet" href="fog-boundary-v8.css?v=1"></head>#' index.html
+          grep -q 'fog-boundary-v8.js' index.html || sed -i 's#</body>#<script src="fog-boundary-v8.js?v=1"></script></body>#' index.html
 
       - name: Validate WWN app and runtime assets
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js fog-v7.css assets/ui-icons.svg; do test -s "$file"; done
+          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js fog-boundary-v8.css fog-boundary-v8.js assets/ui-icons.svg; do test -s "$file"; done
           node --check world.js
           node --check world-v5.js
           node --check app-v6.js
-          grep -q 'app-v6.css?v=' index.html
-          grep -q 'app-v6.js?v=' index.html
-          grep -q 'world-v5.css?v=3' index.html
+          node --check fog-boundary-v8.js
+          grep -q 'fog-boundary-v8.css?v=1' index.html
+          grep -q 'fog-boundary-v8.js?v=1' index.html
           grep -q 'id="inicio"' index.html
           grep -q 'id="personagem"' index.html
           grep -q 'id="explorar"' index.html
           grep -q 'id="confronto"' index.html
           grep -q 'id="mestre"' index.html
-          grep -q 'id="sessoes"' index.html
-          grep -q 'id="favoritos"' index.html
-          grep -q 'id="configuracoes"' index.html
           grep -q 'function wwnTravelSelected' world-v5.js
           grep -q 'function oracleRoll' app-v6.js
-          grep -q 'function combatAttack' app-v6.js
-          grep -q 'fog-unknown' app-v6.css
-          grep -q "@import url('fog-v7.css?v=2')" world-v5.css
-          grep -q 'opacity:1!important' fog-v7.css
-          grep -q 'white-space:normal!important' fog-v7.css
-          grep -q 'text-overflow:clip!important' fog-v7.css
+          grep -q 'renderFrontierFogV8' fog-boundary-v8.js
+          grep -q 'background:#000!important' fog-boundary-v8.css
+          grep -q 'frontier-fog-layer' fog-boundary-v8.css
+          grep -q 'width:128px!important' fog-boundary-v8.css
+          grep -q "'Feature','Relevo'" fog-boundary-v8.js
           grep -q 'symbol id="compass"' assets/ui-icons.svg
-          grep -q 'symbol id="swords"' assets/ui-icons.svg
+          test -s assets/weather_time_07_fog.png
           test -s assets/terrain_features_04_high_mountains.png
           test -s assets/terrain_features_09_freshwater_lake.png
-          test -s assets/terrain_features_10_inland_sea.png
-          test -s assets/poi_inhabited_02_farming_village.png
-          test -s assets/poi_inhabited_06_royal_castle.png
-          test -s assets/poi_dangerous_01_overgrown_ruins.png
-          test -s assets/weather_time_07_fog.png
+          test -s assets/poi_inhabited_16_crossroads_inn.png
+          test -s assets/poi_inhabited_15_stone_bridge.png
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -85,27 +78,22 @@ jobs:
           site='${{ steps.deployment.outputs.page_url }}'
           ok=0
           for attempt in $(seq 1 12); do
-            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'app-v6.js' /tmp/live-index.html; then ok=1; break; fi
+            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'fog-boundary-v8.js?v=1' /tmp/live-index.html; then ok=1; break; fi
             sleep 5
           done
           test "$ok" = 1
-          grep -q 'world-v5.css?v=3' /tmp/live-index.html
-          curl -fsSL "${site}world.js" -o /tmp/live-world.js
+          grep -q 'fog-boundary-v8.css?v=1' /tmp/live-index.html
+          curl -fsSL "${site}fog-boundary-v8.js?v=1" -o /tmp/live-fog-v8.js
+          curl -fsSL "${site}fog-boundary-v8.css?v=1" -o /tmp/live-fog-v8.css
           curl -fsSL "${site}world-v5.js" -o /tmp/live-v5.js
           curl -fsSL "${site}app-v6.js" -o /tmp/live-app.js
-          curl -fsSL "${site}app-v6.css" -o /tmp/live-app.css
-          curl -fsSL "${site}world-v5.css?v=3" -o /tmp/live-v5.css
-          curl -fsSL "${site}fog-v7.css?v=2" -o /tmp/live-fog.css
-          curl -fsSL "${site}assets/ui-icons.svg" -o /tmp/live-icons.svg
-          node --check /tmp/live-world.js
+          node --check /tmp/live-fog-v8.js
           node --check /tmp/live-v5.js
           node --check /tmp/live-app.js
-          grep -q 'function oracleRoll' /tmp/live-app.js
-          grep -q 'fog-unknown' /tmp/live-app.css
-          grep -q 'fog-v7.css?v=2' /tmp/live-v5.css
-          grep -q 'opacity:1!important' /tmp/live-fog.css
-          grep -q 'white-space:normal!important' /tmp/live-fog.css
-          grep -q 'text-overflow:clip!important' /tmp/live-fog.css
-          grep -q 'symbol id="home"' /tmp/live-icons.svg
-          for asset in assets/terrain_features_04_high_mountains.png assets/terrain_features_09_freshwater_lake.png assets/poi_inhabited_06_royal_castle.png assets/poi_dangerous_01_overgrown_ruins.png assets/weather_time_07_fog.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
+          grep -q 'renderFrontierFogV8' /tmp/live-fog-v8.js
+          grep -q 'background:#000!important' /tmp/live-fog-v8.css
+          grep -q 'frontier-fog-layer' /tmp/live-fog-v8.css
+          grep -q 'width:128px!important' /tmp/live-fog-v8.css
+          grep -q "'Feature','Relevo'" /tmp/live-fog-v8.js
+          for asset in assets/weather_time_07_fog.png assets/terrain_features_04_high_mountains.png assets/terrain_features_09_freshwater_lake.png assets/poi_inhabited_16_crossroads_inn.png assets/poi_inhabited_15_stone_bridge.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
