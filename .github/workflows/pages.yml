@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build dark Atlas with sparse POIs
+      - name: Build integrated WWN runtime
         shell: bash
         run: |
           set -euo pipefail
@@ -34,10 +34,12 @@ jobs:
           sed -i 's/Tempo \/ névoa/Tempo \/ clima/g' index.html
 
           # Force cache refresh for Atlas resources.
-          sed -Ei 's/world-v5\.css\?v=[0-9]+/world-v5.css?v=14/g' index.html
-          sed -Ei 's/world-v5\.js\?v=[0-9]+/world-v5.js?v=14/g' index.html
+          sed -Ei 's/world-v5\.css\?v=[0-9]+/world-v5.css?v=16/g' index.html
+          sed -Ei 's/world-v5\.js\?v=[0-9]+/world-v5.js?v=16/g' index.html
+          sed -Ei 's/app-v6\.css\?v=[0-9]+/app-v6.css?v=16/g' index.html
+          sed -Ei 's/app-v6\.js\?v=[0-9]+/app-v6.js?v=16/g' index.html
 
-          # Permanently remove old fog import and fog runtime layer.
+          # No fog baseline: unknown hexes stay black with a gold question mark.
           sed -i "/@import url('fog-v7.css?v=1');/d" world-v5.css
           python3 - <<'PY'
           from pathlib import Path
@@ -50,41 +52,68 @@ jobs:
           s=s.replace("'Sem feature'", "'Sem relevo'")
           s=s.replace("<span>Feature</span>", "<span>Relevo</span>")
           s=s.replace("Terreno, feature ou local...", "Terreno, relevo ou local...")
+          s=s.replace("ou outras features", "ou outros relevos")
           p.write_text(s,encoding='utf-8')
           PY
 
-          # Inject dark palette and sparse POI seed after the main app resources.
+          # Inject dark Atlas, sparse POI seed and the whole-game runtime.
           python3 - <<'PY'
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
           if 'atlas-dark-poi.css' not in s:
-              s=s.replace('</head>', '<link rel="stylesheet" href="atlas-dark-poi.css?v=14"></head>')
-          if 'atlas-poi-seed.js' not in s:
-              s=s.replace('</body>', '<script src="atlas-poi-seed.js?v=15"></script></body>')
+              s=s.replace('</head>', '<link rel="stylesheet" href="atlas-dark-poi.css?v=16"></head>')
           else:
-              import re
-              s=re.sub(r'atlas-poi-seed\.js\?v=\d+', 'atlas-poi-seed.js?v=15', s)
+              s=re.sub(r'atlas-dark-poi\.css\?v=\d+', 'atlas-dark-poi.css?v=16', s)
+          if 'game-v7.css' not in s:
+              s=s.replace('</head>', '<link rel="stylesheet" href="game-v7.css?v=16"></head>')
+          else:
+              s=re.sub(r'game-v7\.css\?v=\d+', 'game-v7.css?v=16', s)
+          if 'atlas-poi-seed.js' not in s:
+              s=s.replace('</body>', '<script src="atlas-poi-seed.js?v=16"></script></body>')
+          else:
+              s=re.sub(r'atlas-poi-seed\.js\?v=\d+', 'atlas-poi-seed.js?v=16', s)
+          if 'game-v7.js' not in s:
+              s=s.replace('</body>', '<script src="game-v7.js?v=16"></script></body>')
+          else:
+              s=re.sub(r'game-v7\.js\?v=\d+', 'game-v7.js?v=16', s)
           p.write_text(s,encoding='utf-8')
           PY
 
-      - name: Validate Atlas production build
+          # Production CSS hard-lock for the requested map baseline.
+          cat >> atlas-dark-poi.css <<'CSS'
+
+          /* ATLAS_LABEL_STACK_V16 */
+          .map-weather,.hex .mist,.hex .fog-unknown{display:none!important;opacity:0!important;background:none!important;background-image:none!important}
+          .hex:not(.seen){background:#000!important}
+          .hex:not(.seen) .shade{background:#000!important;opacity:1!important}
+          .hex:not(.seen) .mark{display:block!important;color:#d9b26a!important;text-shadow:0 0 8px rgba(217,178,106,.3),0 2px 5px #000!important}
+          CSS
+
+      - name: Validate integrated production build
         shell: bash
         run: |
           set -euo pipefail
-          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js atlas-dark-poi.css atlas-poi-seed.js assets/ui-icons.svg; do test -s "$file"; done
+          for file in index.html world.css world.js world-v5.css world-v5.js app-v6.css app-v6.js atlas-dark-poi.css atlas-poi-seed.js game-v7.css game-v7.js assets/ui-icons.svg; do test -s "$file"; done
           node --check world.js
           node --check world-v5.js
           node --check app-v6.js
           node --check atlas-poi-seed.js
+          node --check game-v7.js
           grep -q 'Exploração Hex' index.html
-          grep -q 'atlas-dark-poi.css?v=14' index.html
-          grep -q 'atlas-poi-seed.js?v=15' index.html
+          grep -q 'atlas-dark-poi.css?v=16' index.html
+          grep -q 'atlas-poi-seed.js?v=16' index.html
+          grep -q 'game-v7.css?v=16' index.html
+          grep -q 'game-v7.js?v=16' index.html
           grep -q 'ATLAS_DARK_POI_V14' atlas-dark-poi.css
+          grep -q 'ATLAS_LABEL_STACK_V16' atlas-dark-poi.css
           grep -q 'ATLAS_POI_SEED_V15' atlas-poi-seed.js
-          grep -q "farmVillage" atlas-poi-seed.js
-          grep -q "bridge" atlas-poi-seed.js
-          grep -q "abandoned" atlas-poi-seed.js
+          grep -q 'GAME_RUNTIME_V7' game-v7.js
+          grep -q 'poi-label-overlay' game-v7.css
+          grep -q 'gameWorldTurn' game-v7.js
+          grep -q 'gameSnapshotSave' game-v7.js
+          grep -q 'gameCombatAttack' game-v7.js
           ! grep -q "@import url('fog-v7.css" world-v5.css
           ! grep -q 'fog-boundary-v8.css' index.html
           ! grep -q 'fog-boundary-v8.js' index.html
@@ -109,15 +138,20 @@ jobs:
           site='${{ steps.deployment.outputs.page_url }}'
           ok=0
           for attempt in $(seq 1 12); do
-            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'atlas-dark-poi.css?v=14' /tmp/live-index.html; then ok=1; break; fi
+            if curl -fsSL --retry 2 "$site" -o /tmp/live-index.html && grep -q 'game-v7.js?v=16' /tmp/live-index.html; then ok=1; break; fi
             sleep 5
           done
           test "$ok" = 1
-          grep -q 'atlas-poi-seed.js?v=15' /tmp/live-index.html
-          curl -fsSL "${site}atlas-dark-poi.css?v=14" -o /tmp/live-dark.css
-          curl -fsSL "${site}atlas-poi-seed.js?v=15" -o /tmp/live-poi.js
-          node --check /tmp/live-poi.js
-          grep -q 'ATLAS_DARK_POI_V14' /tmp/live-dark.css
-          grep -q 'ATLAS_POI_SEED_V15' /tmp/live-poi.js
+          grep -q 'game-v7.css?v=16' /tmp/live-index.html
+          grep -q 'atlas-poi-seed.js?v=16' /tmp/live-index.html
+          curl -fsSL "${site}game-v7.js?v=16" -o /tmp/live-game.js
+          curl -fsSL "${site}game-v7.css?v=16" -o /tmp/live-game.css
+          curl -fsSL "${site}atlas-dark-poi.css?v=16" -o /tmp/live-dark.css
+          node --check /tmp/live-game.js
+          grep -q 'GAME_RUNTIME_V7' /tmp/live-game.js
+          grep -q 'gameWorldTurn' /tmp/live-game.js
+          grep -q 'poi-label-overlay' /tmp/live-game.css
+          grep -q 'ATLAS_LABEL_STACK_V16' /tmp/live-dark.css
+          ! grep -q "@import url('fog-v7.css" /tmp/live-dark.css
           for asset in assets/poi_inhabited_02_farming_village.png assets/poi_inhabited_15_stone_bridge.png assets/poi_dangerous_12_abandoned_settlement.png; do curl -fsSL "${site}${asset}" -o /tmp/check.bin; test -s /tmp/check.bin; done
           echo "PUBLIC_URL=$site"
